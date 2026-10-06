@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 
-from jcvd_bot.bot import JCVDBot
-from jcvd_bot.config import CLAUDE_MODEL, MAX_HISTORY_TURNS, OLLAMA_MODEL
+from persona_bot.bot import JCVDBot
+from persona_bot.config import CLAUDE_MODEL, MAX_HISTORY_TURNS, OLLAMA_MODEL
 
 CITATION = {"id": "quote_001", "text": "Je suis aware.", "similarity": 0.5, "themes": [], "tone": ""}
 

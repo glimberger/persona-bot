@@ -1,5 +1,5 @@
-from jcvd_bot import config
-from jcvd_bot.ingest import build_citations, classify, deduplicate, extract_quotes, normalize
+from persona_bot import config
+from persona_bot.ingest import build_citations, classify, deduplicate, extract_quotes, normalize
 
 
 def test_extract_quotes_joins_multiline_blocks():

@@ -18,7 +18,7 @@ import re
 import unicodedata
 from pathlib import Path
 
-from jcvd_bot.logs import short_repr, traced
+from persona_bot.logs import short_repr, traced
 
 log = logging.getLogger(__name__)
 

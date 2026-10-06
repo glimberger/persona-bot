@@ -15,8 +15,8 @@ from pathlib import Path
 import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
-from jcvd_bot.config import CHROMA_DB_PATH, COLLECTION_NAME, EMBEDDING_MODEL
-from jcvd_bot.logs import traced
+from persona_bot.config import CHROMA_DB_PATH, COLLECTION_NAME, EMBEDDING_MODEL
+from persona_bot.logs import traced
 
 log = logging.getLogger(__name__)
 

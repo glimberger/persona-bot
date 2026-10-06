@@ -1,5 +1,5 @@
-from jcvd_bot.config import EVAL_SEARCH_JSON
-from jcvd_bot.evaluation import evaluate, load_eval_set, rank_of_expected, summarize
+from persona_bot.config import EVAL_SEARCH_JSON
+from persona_bot.evaluation import evaluate, load_eval_set, rank_of_expected, summarize
 
 
 def test_rank_of_expected():

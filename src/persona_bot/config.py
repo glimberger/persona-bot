@@ -1,15 +1,15 @@
-"""Configuration centralisée du bot JCVD."""
+"""Configuration centralisée de persona-bot."""
 
 import os
 from pathlib import Path
 
-# src/jcvd_bot/config.py -> racine du projet
+# src/persona_bot/config.py -> racine du projet
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = PROJECT_ROOT / "data"
 CITATIONS_MD = DATA_DIR / "citations_jcvd.md"
 CITATIONS_JSON = DATA_DIR / "citations.json"
 CHROMA_DB_PATH = DATA_DIR / "chroma"
-EVAL_SEARCH_JSON = DATA_DIR / "eval_search.json"  # jeu d'évaluation de la recherche (jcvd eval)
+EVAL_SEARCH_JSON = DATA_DIR / "eval_search.json"  # jeu d'évaluation de la recherche (persona eval)
 COLLECTION_NAME = "jcvd_citations"
 
 # Modèle d'embeddings local et multilingue (384 dimensions), téléchargé au premier lancement.

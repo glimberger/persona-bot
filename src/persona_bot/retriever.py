@@ -7,9 +7,9 @@ vecteurs ne sont pas comparables), puis Chroma renvoie les plus proches.
 
 import logging
 
-from jcvd_bot.config import COLLECTION_NAME, RETRIEVE_K, SIMILARITY_THRESHOLD
-from jcvd_bot.index import embedding_function, get_client
-from jcvd_bot.logs import short_repr, traced
+from persona_bot.config import COLLECTION_NAME, RETRIEVE_K, SIMILARITY_THRESHOLD
+from persona_bot.index import embedding_function, get_client
+from persona_bot.logs import short_repr, traced
 
 log = logging.getLogger(__name__)
 

@@ -3,5 +3,5 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .env
-# index vectoriel, régénéré par `jcvd index`
+# index vectoriel, régénéré par `persona index`
 data/chroma/

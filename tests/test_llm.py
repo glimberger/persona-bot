@@ -2,9 +2,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from jcvd_bot import llm
-from jcvd_bot.cli import answer_metrics
-from jcvd_bot.config import OLLAMA_BASE_URL
+from persona_bot import llm
+from persona_bot.cli import answer_metrics
+from persona_bot.config import OLLAMA_BASE_URL
 
 
 def test_ollama_client_points_to_ollama_server():

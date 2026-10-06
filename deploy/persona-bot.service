@@ -8,22 +8,22 @@
 #
 # %h est remplacé par ton dossier personnel (/home/<utilisateur>).
 # Installation et commandes utiles : voir docs/DEPLOIEMENT_PI.md.
-# Pi géré avec Nix : deploy/jcvd-bot.nix décrit le même service en module home-manager
+# Pi géré avec Nix : deploy/persona-bot.nix décrit le même service en module home-manager
 # (docs/DEPLOIEMENT_PI.md, section 12). Garde les deux fichiers synchronisés.
 
 [Unit]
-Description=Bot Telegram JCVD (RAG)
+Description=Bots Telegram persona-bot (une persona par bot)
 # Avec Ollama sur le Pi (service utilisateur ollama.service, voir docs/DEPLOIEMENT_PI.md) :
 # démarre le bot après lui. Ce n'est qu'un ordre de démarrage, pas une dépendance : sans
 # Ollama (LLM_BACKEND=claude, ou Ollama sur une autre machine), la ligne n'a aucun effet.
 After=ollama.service
 
 [Service]
-WorkingDirectory=%h/projects/JeanClaude
+WorkingDirectory=%h/projects/persona-bot
 # --env-file : la clé d'API et le token Telegram sont lus dans .env, exactement comme en
 # lançant le bot à la main.
 # --frozen : utilise les versions de uv.lock telles quelles, sans jamais les modifier.
-ExecStart=%h/.local/bin/uv run --frozen --env-file .env jcvd telegram
+ExecStart=%h/.local/bin/uv run --frozen --env-file .env persona telegram
 # Relance le bot 10 s après un plantage. Au démarrage du Pi, si le réseau n'est pas encore
 # prêt, le bot échoue à joindre Telegram, s'arrête, et cette relance fait la suite.
 Restart=on-failure

@@ -9,8 +9,8 @@ import pytest
 from telegram import Update
 from telegram.error import Conflict
 
-from jcvd_bot import telegram_app
-from jcvd_bot.telegram_app import (
+from persona_bot import telegram_app
+from persona_bot.telegram_app import (
     build_application,
     is_allowed,
     on_error,
@@ -128,7 +128,7 @@ def test_reset_command():
 
 def test_conflict_error_gives_a_short_explanation(caplog):
     context = SimpleNamespace(error=Conflict("terminated by other getUpdates request"))
-    with caplog.at_level(logging.INFO, logger="jcvd_bot"):
+    with caplog.at_level(logging.INFO, logger="persona_bot"):
         asyncio.run(on_error(None, context))
     assert "autre instance du bot" in caplog.text
     assert "Traceback" not in caplog.text
@@ -153,7 +153,7 @@ def test_token_never_logged_by_traced_handlers(caplog):
     }
     update = Update.de_json(data, app.bot)
     context = SimpleNamespace(bot=app.bot, bot_data=app.bot_data)
-    with caplog.at_level(logging.DEBUG, logger="jcvd_bot"):
+    with caplog.at_level(logging.DEBUG, logger="persona_bot"):
         assert is_allowed(update, context)
     assert "→ is_allowed(update=Update(" in caplog.text
     assert "ExtBot[token=***]" in caplog.text

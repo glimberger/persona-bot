@@ -14,10 +14,10 @@ historique séparé par conversation (une par utilisateur Telegram, par exemple)
 
 import logging
 
-from jcvd_bot import llm
-from jcvd_bot.config import LLM_BACKEND, MAX_HISTORY_TURNS
-from jcvd_bot.logs import traced
-from jcvd_bot.retriever import Retriever
+from persona_bot import llm
+from persona_bot.config import LLM_BACKEND, MAX_HISTORY_TURNS
+from persona_bot.logs import traced
+from persona_bot.retriever import Retriever
 
 log = logging.getLogger(__name__)
 
@@ -84,7 +84,7 @@ class JCVDBot:
         self.backend = backend
         self.client = client or llm.create_client(backend)
         self.histories = {}  # identifiant de conversation -> liste de messages
-        self.last_response = None  # réponse brute du modèle, pour les mesures de `jcvd ask`
+        self.last_response = None  # réponse brute du modèle, pour les mesures de `persona ask`
         log.debug("Backend %s, modèle %s", backend, llm.model_name(backend))
 
     @traced

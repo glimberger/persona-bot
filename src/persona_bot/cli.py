@@ -1,21 +1,21 @@
 """
-Point d'entrée en ligne de commande : `jcvd <commande>`.
+Point d'entrée en ligne de commande : `persona <commande>`.
 
-    jcvd ingest              étape 1  : Markdown -> data/citations.json
-    jcvd index               étape 2  : citations.json -> index Chroma
-    jcvd search "question"   étape 3a : afficher les citations les plus proches
-    jcvd eval                étape 3a : mesurer la qualité de la recherche
-    jcvd ask "question"      étape 3b : une seule réponse, avec des mesures (comparer des modèles)
-    jcvd chat                étape 3b : discuter avec le bot dans le terminal
-    jcvd telegram            étape 4  : lancer le bot Telegram
+    persona ingest              étape 1  : Markdown -> data/citations.json
+    persona index               étape 2  : citations.json -> index Chroma
+    persona search "question"   étape 3a : afficher les citations les plus proches
+    persona eval                étape 3a : mesurer la qualité de la recherche
+    persona ask "question"      étape 3b : une seule réponse, avec des mesures (comparer des modèles)
+    persona chat                étape 3b : discuter avec le bot dans le terminal
+    persona telegram            étape 4  : lancer le bot Telegram
 
-Ajoute --debug (avant la commande) ou JCVD_DEBUG=1 pour des logs détaillés :
-    jcvd --debug search "J'ai peur d'échouer"
+Ajoute --debug (avant la commande) ou PERSONA_DEBUG=1 pour des logs détaillés :
+    persona --debug search "J'ai peur d'échouer"
 
 Le modèle de langage (Claude ou Ollama) se choisit avec LLM_BACKEND, voir llm.py.
 
 Les imports lourds (Chroma, PyTorch, Anthropic) sont faits dans chaque commande :
-`jcvd ingest` reste ainsi instantané.
+`persona ingest` reste ainsi instantané.
 """
 
 import argparse
@@ -24,14 +24,14 @@ import os
 import re
 import time
 
-from jcvd_bot import config
-from jcvd_bot.logs import setup_logging
+from persona_bot import config
+from persona_bot.logs import setup_logging
 
-log = logging.getLogger("jcvd_bot.cli")
+log = logging.getLogger("persona_bot.cli")
 
 
 def cmd_ingest(args):
-    from jcvd_bot.ingest import run
+    from persona_bot.ingest import run
 
     raw_count, citations = run(config.CITATIONS_MD, config.CITATIONS_JSON)
     print(f"🔍 {raw_count} citations brutes trouvées")
@@ -40,7 +40,7 @@ def cmd_ingest(args):
 
 
 def cmd_index(args):
-    from jcvd_bot.index import build_index
+    from persona_bot.index import build_index
 
     print(f"🔄 Vectorisation avec {config.EMBEDDING_MODEL}...")
     count = build_index(config.CITATIONS_JSON)
@@ -48,7 +48,7 @@ def cmd_index(args):
 
 
 def cmd_search(args):
-    from jcvd_bot.retriever import Retriever
+    from persona_bot.retriever import Retriever
 
     results = Retriever().search(args.query, k=args.k)
     if not results:
@@ -58,8 +58,8 @@ def cmd_search(args):
 
 
 def cmd_eval(args):
-    from jcvd_bot.evaluation import evaluate, load_eval_set, summarize
-    from jcvd_bot.retriever import Retriever
+    from persona_bot.evaluation import evaluate, load_eval_set, summarize
+    from persona_bot.retriever import Retriever
 
     results = evaluate(Retriever(), load_eval_set(config.EVAL_SEARCH_JSON))
     for entry, rank in results:
@@ -85,8 +85,8 @@ def answer_metrics(text):
 
 
 def cmd_ask(args):
-    from jcvd_bot import llm
-    from jcvd_bot.bot import JCVDBot
+    from persona_bot import llm
+    from persona_bot.bot import JCVDBot
 
     bot = JCVDBot()
     start = time.perf_counter()
@@ -107,7 +107,7 @@ def cmd_ask(args):
 
 
 def cmd_chat(args):
-    from jcvd_bot.bot import JCVDBot
+    from persona_bot.bot import JCVDBot
 
     bot = JCVDBot()
     print("🎬 JCVD Bot — tape 'exit' pour quitter\n")
@@ -136,8 +136,8 @@ def cmd_telegram(args):
     if not token:
         raise SystemExit("TELEGRAM_BOT_TOKEN manquant (voir .env.example)")
 
-    from jcvd_bot.bot import JCVDBot
-    from jcvd_bot.telegram_app import build_application, parse_allowed_users
+    from persona_bot.bot import JCVDBot
+    from persona_bot.telegram_app import build_application, parse_allowed_users
 
     allowed_users = parse_allowed_users(os.environ.get("TELEGRAM_ALLOWED_USERS", ""))
     if not allowed_users:
@@ -149,11 +149,11 @@ def cmd_telegram(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(prog="jcvd", description="Bot RAG qui parle comme JCVD")
+    parser = argparse.ArgumentParser(prog="persona", description="Bots à personas (RAG, Telegram)")
     parser.add_argument(
         "--debug",
         action="store_true",
-        help="logs détaillés : chaque fonction appelée et chaque action (aussi : JCVD_DEBUG=1)",
+        help="logs détaillés : chaque fonction appelée et chaque action (aussi : PERSONA_DEBUG=1)",
     )
     commands = parser.add_subparsers(required=True, metavar="commande")
 
@@ -177,7 +177,7 @@ def main():
     commands.add_parser("telegram", help="étape 4 : lancer le bot Telegram").set_defaults(func=cmd_telegram)
 
     args = parser.parse_args()
-    debug = args.debug or os.environ.get("JCVD_DEBUG", "").lower() in {"1", "true", "yes"}
+    debug = args.debug or os.environ.get("PERSONA_DEBUG", "").lower() in {"1", "true", "yes"}
     setup_logging(debug)
     log.debug("Mode debug activé, commande : %s", args.func.__name__)
     args.func(args)

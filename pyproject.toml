@@ -1,7 +1,7 @@
 [project]
-name = "jcvd-bot"
+name = "persona-bot"
 version = "0.1.0"
-description = "Bot RAG pédagogique qui parle comme Jean-Claude Van Damme (Chroma + Claude)"
+description = "Bot pédagogique multi-personas sur Telegram : RAG (Chroma), Claude ou Ollama"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.scripts]
-jcvd = "jcvd_bot.cli:main"
+persona = "persona_bot.cli:main"
 
 [dependency-groups]
 dev = [

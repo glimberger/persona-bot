@@ -18,8 +18,8 @@ from telegram.constants import ChatAction, MessageLimit
 from telegram.error import Conflict, NetworkError, TelegramError
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
-from jcvd_bot.config import LLM_BACKEND
-from jcvd_bot.logs import traced
+from persona_bot.config import LLM_BACKEND
+from persona_bot.logs import traced
 
 log = logging.getLogger(__name__)
 
