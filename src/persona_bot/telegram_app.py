@@ -20,7 +20,7 @@ import signal
 import anthropic
 from telegram import Update
 from telegram.constants import ChatAction, MessageLimit
-from telegram.error import Conflict, NetworkError, TelegramError
+from telegram.error import Conflict, InvalidToken, NetworkError, TelegramError
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
 from persona_bot.config import LLM_BACKEND
@@ -219,7 +219,17 @@ async def run_all(applications, stop=None):
             # ce qui a été ouvert (comme run_polling ; shutdown ne fait rien si rien n'a démarré).
             launched.append(app)
             # initialize() contacte Telegram (getMe) : un token faux ou un réseau absent échoue ici.
-            await app.initialize()
+            try:
+                await app.initialize()
+            except InvalidToken:
+                # Le message d'origine de la librairie contient le token en clair : il finirait
+                # dans le terminal ou le journal systemd. "from None" empêche Python de
+                # l'afficher comme cause de notre erreur.
+                slug = app.bot_data["bot"].persona.slug
+                raise SystemExit(
+                    f"Token Telegram refusé pour la persona {slug} : vérifie TELEGRAM_TOKEN_{slug.upper()} "
+                    "dans .env (copie-le à nouveau depuis @BotFather)."
+                ) from None
 
             # Les erreurs de récupération des messages (réseau, Conflict...) passent par nos
             # gestionnaires d'erreurs (on_error), comme le fait run_polling().

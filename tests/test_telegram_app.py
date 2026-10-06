@@ -7,7 +7,7 @@ import anthropic
 import httpx2
 import pytest
 from telegram import Update
-from telegram.error import Conflict
+from telegram.error import Conflict, InvalidToken
 
 from persona_bot import telegram_app
 from persona_bot.telegram_app import (
@@ -175,7 +175,7 @@ class FakeApplication:
     d'arrêt, pour vérifier que run_all les enchaîne dans le bon ordre.
     """
 
-    def __init__(self, name, log, persona, fail_on_initialize=False):
+    def __init__(self, name, log, persona, fail_on_initialize=None):
         self.name, self.log, self.fail = name, log, fail_on_initialize
         self.running = False
         self.bot = SimpleNamespace(username=name)
@@ -198,7 +198,7 @@ class FakeApplication:
     async def initialize(self):
         self.log.append(f"{self.name}.initialize")
         if self.fail:
-            raise RuntimeError("token invalide")
+            raise self.fail
 
     async def start(self):
         self.log.append(f"{self.name}.start")
@@ -239,8 +239,22 @@ def test_run_all_starts_every_bot_then_stops_them_in_reverse_order(persona):
 def test_run_all_stops_started_bots_when_another_fails(persona):
     # Le 2e bot a un token invalide : le 1er, déjà démarré, doit quand même s'arrêter proprement.
     log = []
-    apps = [FakeApplication("a", log, persona), FakeApplication("b", log, persona, fail_on_initialize=True)]
+    error = RuntimeError("réseau absent")
+    apps = [FakeApplication("a", log, persona), FakeApplication("b", log, persona, fail_on_initialize=error)]
     with pytest.raises(RuntimeError):
         run_until_stopped(apps)
     assert log[-4:] == ["b.shutdown", "a.updater.stop", "a.stop", "a.shutdown"]
     assert "b.start" not in log
+
+
+def test_invalid_token_error_does_not_show_the_token(persona):
+    # Le message de la librairie contient le token : il ne doit apparaître nulle part.
+    log = []
+    error = InvalidToken(f"The token `{FAKE_TOKEN}` was rejected by the server.")
+    with pytest.raises(SystemExit) as exit_info:
+        run_until_stopped([FakeApplication("a", log, persona, fail_on_initialize=error)])
+    message = str(exit_info.value)
+    assert "TELEGRAM_TOKEN_TEST" in message
+    assert FAKE_TOKEN not in message
+    assert exit_info.value.__suppress_context__  # la cause (avec le token) n'est pas affichée
+    assert log[-1] == "a.shutdown"
