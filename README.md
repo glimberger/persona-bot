@@ -1,8 +1,9 @@
 # persona-bot — des personas sur Telegram, un RAG pédagogique
 
 Des bots conversationnels qui incarnent chacun un personnage, une **persona**, et qu'on
-retrouve sur Telegram. La première, Jean-Claude Van Damme, s'appuie sur ses vraies citations ;
-d'autres peuvent n'avoir qu'une description. Le projet sert à comprendre, pas à pas, le
+retrouve sur Telegram : Jean-Claude Van Damme et Godefroy de Montmirail, le chevalier des
+*Visiteurs*. Tous deux s'appuient sur de vraies répliques, mais une persona peut aussi n'avoir
+qu'une description. Le projet sert à comprendre, pas à pas, le
 pattern **RAG** (*Retrieval-Augmented Generation*) : chercher des passages pertinents dans une
 base de textes, puis les donner à un LLM pour qu'il s'en inspire. Et à voir ce qui change
 quand on s'en passe.
@@ -258,7 +259,7 @@ terminal avant de lui créer un bot.
    donne un **token** : c'est le mot de passe de ce bot, ne le partage pas. Recommence pour
    chaque persona (`/setuserpic` dans @BotFather pour lui donner une photo).
 2. Copie le fichier d'exemple et remplis `ANTHROPIC_API_KEY` et un `TELEGRAM_TOKEN_<SLUG>`
-   par persona (`TELEGRAM_TOKEN_JCVD` pour JCVD) :
+   par persona (`TELEGRAM_TOKEN_JCVD` pour JCVD, `TELEGRAM_TOKEN_GODEFROY` pour Godefroy) :
    ```bash
    cp .env.example .env
    chmod 600 .env        # lisible par toi seul
@@ -412,12 +413,13 @@ persona-bot/
 ├── .env.example                 modèle du fichier de secrets (.env, non versionné)
 ├── LICENSE                      licence MIT
 ├── personas/                    une persona par dossier (voir « Les personas »)
-│   └── jcvd/
-│       ├── persona.toml         nom, prompt système, messages, mots-clés des thèmes
-│       ├── citations.md         ses citations, source brute (à éditer)
-│       └── eval_search.json     jeu d'évaluation de sa recherche (`persona eval`)
+│   ├── jcvd/
+│   │   ├── persona.toml         nom, prompt système, messages, mots-clés des thèmes
+│   │   ├── citations.md         ses citations, source brute (à éditer)
+│   │   └── eval_search.json     jeu d'évaluation de sa recherche (`persona eval`)
+│   └── godefroy/                persona.toml et citations.md (pas encore de jeu d'évaluation)
 ├── data/                        fichiers générés
-│   ├── jcvd/citations.json      généré par `persona ingest`
+│   ├── <slug>/citations.json    généré par `persona ingest`, un dossier par persona
 │   └── chroma/                  index vectoriel, généré par `persona index` (non versionné)
 ├── deploy/
 │   ├── persona-bot.service      service systemd pour faire tourner les bots sur un Pi
@@ -474,13 +476,16 @@ langage, créer une persona.
 
 ## Migrer depuis JCVD Bot
 
-Le projet s'appelait « JCVD Bot » (dépôt `JeanClaude`, commande `jcvd`). Sur une
-installation existante, après `git pull` :
+Le projet s'appelait « JCVD Bot » (dépôt `JeanClaude`, commande `jcvd`). Il continue dans un
+nouveau dépôt, `persona-bot`, qui reprend tout son historique ; l'ancien dépôt `JeanClaude`
+reste en ligne, figé à la version JCVD Bot. Pour passer une installation existante au nouveau
+projet :
 
-1. **Le dépôt et le dossier.** Le dépôt GitHub s'appelle désormais `persona-bot`. GitHub
-   redirige l'ancienne adresse, mais mets-la à jour, puis renomme le dossier :
+1. **Le dépôt et le dossier.** Pointe ton clone vers le nouveau dépôt, récupère la nouvelle
+   version, puis renomme le dossier :
    ```bash
-   git remote set-url origin git@github.com:<compte>/persona-bot.git
+   git remote set-url origin git@github.com:glimberger/persona-bot.git
+   git pull
    cd .. && mv JeanClaude persona-bot && cd persona-bot
    rm -rf .venv && uv sync   # un .venv ne survit pas au déplacement de son dossier
    ```

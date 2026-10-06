@@ -5,8 +5,9 @@ maîtrises Python et que tu connais, au moins dans les grandes lignes, ce qu'est
 modèle, tel que Claude, qui génère du texte). Aucune autre connaissance préalable n'est
 requise.
 
-Le fil conducteur est la persona Jean-Claude Van Damme, la seule du projet qui s'appuie sur
-des citations. La section 10 montre ce qui change pour une persona qui n'en a pas.
+Le fil conducteur est la persona Jean-Claude Van Damme et ses 72 citations. Le projet en compte
+une autre, Godefroy de Montmirail, construite de la même façon. La section 10 montre ce qui
+change pour une persona qui n'a pas de citations.
 
 Tous les chiffres et exemples présentés ci-dessous proviennent d'exécutions réelles du code
 du projet ; tu peux donc les reproduire.

@@ -539,7 +539,8 @@ Pendant l'attente, Telegram affiche « en train d'écrire… » jusqu'à la rép
 ## 14. Migrer depuis JCVD Bot
 
 Le projet s'appelait « JCVD Bot » : dépôt `JeanClaude`, service `jcvd-bot`, commande `jcvd`.
-Sur un Pi installé à cette époque, le service, le dossier, deux variables de `.env` et l'index
+Il continue dans un nouveau dépôt, `persona-bot`, qui reprend son historique (l'ancien reste
+figé à la version JCVD Bot). Sur un Pi installé à cette époque, le service, le dossier, deux variables de `.env` et l'index
 changent de nom. Le résumé côté ordinateur est dans le README,
 [Migrer depuis JCVD Bot](../README.md#migrer-depuis-jcvd-bot) ; voici la procédure sur le Pi.
 

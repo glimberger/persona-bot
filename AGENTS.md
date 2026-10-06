@@ -6,8 +6,8 @@ dépôt. Lis-le avant toute modification.
 ## Un projet pédagogique avant tout
 
 Ce projet (persona-bot) fait parler des personas, chacune servie par son propre bot Telegram :
-Jean-Claude Van Damme, qui s'appuie sur ses vraies citations, et d'autres qui n'ont qu'une
-description. Mais son vrai but est **d'apprendre** : comprendre le RAG (*Retrieval-Augmented
+Jean-Claude Van Damme et Godefroy de Montmirail, qui s'appuient sur de vraies répliques ; une
+persona peut aussi n'avoir qu'une description. Mais son vrai but est **d'apprendre** : comprendre le RAG (*Retrieval-Augmented
 Generation*), les embeddings, les bases vectorielles, l'appel à un LLM, puis le déploiement
 d'un bot Telegram sur un Raspberry Pi.
 
