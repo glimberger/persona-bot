@@ -39,13 +39,13 @@
         # `nix develop` utilise `default` quand on ne nomme pas de shell.
         default = pkgs.mkShell (
           {
-            packages = [ pkgs.uv ] ++ pkgs.lib.optional pkgs.stdenv.isDarwin pkgs.python3;
+            packages = [ pkgs.uv ] ++ pkgs.lib.optional pkgs.stdenv.hostPlatform.isDarwin pkgs.python3;
           }
           # Sur Mac : uv crée .venv avec le Python de ce shell, au lieu d'en télécharger un ou
           # d'en prendre un autre trouvé sur la machine. Piège évité : un .venv lié à un Python
           # installé ailleurs (par exemple par Homebrew) casse dès que ce Python disparaît.
           # Quand Nix met Python à jour, uv recrée .venv tout seul au prochain `uv run`.
-          // pkgs.lib.optionalAttrs pkgs.stdenv.isDarwin {
+          // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
             UV_PYTHON = "${pkgs.python3}/bin/python3";
             UV_PYTHON_DOWNLOADS = "never";
           }
@@ -56,7 +56,7 @@
           # dès `import numpy`. uv utilise donc son propre Python (téléchargé une fois dans
           # ~/.local/share/uv/python), compilé pour un Linux classique. Limite : sous NixOS,
           # qui n'a pas de /usr/lib, ce Python-là ne démarre pas sans nix-ld.
-          // pkgs.lib.optionalAttrs pkgs.stdenv.isLinux {
+          // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
             UV_PYTHON_PREFERENCE = "only-managed";
           }
         );
