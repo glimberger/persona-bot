@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from types import SimpleNamespace
 
 import pytest
 
@@ -47,9 +48,9 @@ def test_traced_logs_and_reraises_errors(caplog):
     assert "✗ boom a levé ValueError" in caplog.text
 
 
-def test_telegram_token_never_logged(caplog):
+def test_telegram_token_never_logged(caplog, persona):
     with caplog.at_level(logging.DEBUG, logger="persona_bot"):
-        build_application("123456:TOKEN-SECRET", {42}, jcvd=object())
+        build_application("123456:TOKEN-SECRET", {42}, bot=SimpleNamespace(persona=persona))
     assert "Application Telegram prête" in caplog.text
     assert "TOKEN-SECRET" not in caplog.text
 

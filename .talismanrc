@@ -11,4 +11,11 @@ fileignoreconfig:
   # Only the file name check is skipped; its content is still scanned for secrets.
   - filename: .env.example
     ignore_detectors: [filename]
+# Words that look like secrets to Talisman's pattern detector but are not.
+allowed_patterns:
+  # Fake Telegram token used by tests/test_logs.py to check that tokens are masked in logs.
+  - "123456:TOKEN-SECRET"
+  # French prose in persona prompts: "passionné" and "passage" contain "pass".
+  - "passionné"
+  - "passage"
 version: "1.0"

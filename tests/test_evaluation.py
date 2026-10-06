@@ -1,5 +1,5 @@
-from persona_bot.config import EVAL_SEARCH_JSON
 from persona_bot.evaluation import evaluate, load_eval_set, rank_of_expected, summarize
+from persona_bot.personas import load_persona
 
 
 def test_rank_of_expected():
@@ -27,6 +27,6 @@ def test_evaluate_uses_the_retriever_ranking():
 
 
 def test_eval_set_is_well_formed():
-    eval_set = load_eval_set(EVAL_SEARCH_JSON)
+    eval_set = load_eval_set(load_persona("jcvd").eval_json)
     assert {e["level"] for e in eval_set} == {"facile", "difficile"}
     assert all(e["question"] and e["expected"] for e in eval_set)

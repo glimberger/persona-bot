@@ -86,8 +86,8 @@ def traced(func):
     """
     Décorateur : en mode debug, journalise chaque appel de `func`.
 
-        → JCVDBot.respond(user_message='Salut', conversation_id=42)
-        ← JCVDBot.respond = ('Ah tu vois...', [...]) (2315 ms)
+        → PersonaBot.respond(user_message='Salut', conversation_id=42)
+        ← PersonaBot.respond = ('Ah tu vois...', [...]) (2315 ms)
 
     En mode normal, il appelle simplement la fonction : le test
     `isEnabledFor(DEBUG)` ne coûte presque rien.

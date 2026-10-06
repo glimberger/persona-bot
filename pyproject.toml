@@ -5,7 +5,7 @@ description = "Bot pédagogique multi-personas sur Telegram : RAG (Chroma), Clau
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "anthropic>=1.0",
     "chromadb>=1.0",

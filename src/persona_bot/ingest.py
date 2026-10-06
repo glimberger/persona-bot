@@ -8,7 +8,11 @@
 
 Les métadonnées sont des heuristiques par mots-clés : utiles pour explorer
 le corpus et donner du contexte au LLM, mais c'est l'embedding (étape 2)
-qui fait le vrai travail de recherche par le sens.
+qui fait le vrai travail de recherche par le sens. Les mots-clés dépendent
+du vocabulaire de chaque persona : ils sont dans son persona.toml, section
+[ingest] (voir personas.py).
+
+Cette étape ne concerne que les personas qui ont des citations.
 """
 
 import difflib
@@ -16,33 +20,12 @@ import json
 import logging
 import re
 import unicodedata
-from pathlib import Path
 
 from persona_bot.logs import short_repr, traced
 
 log = logging.getLogger(__name__)
 
 DUPLICATE_RATIO = 0.9
-
-THEME_KEYWORDS = {
-    "awareness": ["aware", "awareness", "conscient", "réveiller", "sensation", "sensations"],
-    "enveloppe": ["enveloppe", "physiquement", "répliquant", "réplicants", "replicant"],
-    "spiritualite": ["dieu", "seigneur", "spirit", "spirituellement", "spiritualité", "religion", "âme"],
-    "recreation": ["recréer", "créer", "création", "devenir", "erreurs", "combat"],
-    "verite_paradoxe": ["vérité", "paradigme", "existe", "même temps"],
-    "nature": ["air", "eau", "plantes", "oiseaux", "oiseau", "animaux", "cosmos", "univers", "oxygène"],
-    "corps": ["corps", "muscles", "physique", "physical", "nu"],
-    "amour": ["amour", "aimer", "femme", "enfant"],
-    "cinema": ["film", "films", "acteur", "rôle", "tournage"],
-}
-
-SEARCH_CONTEXTS = {
-    "amour": "quand l'utilisateur parle d'amour ou de relations",
-    "recreation": "quand l'utilisateur parle de progresser, d'échec ou de peur",
-    "spiritualite": "quand l'utilisateur parle de sens, de foi ou de spiritualité",
-    "nature": "quand la discussion porte sur la nature ou le monde",
-    "awareness": "quand l'utilisateur parle de conscience de soi",
-}
 
 
 # contains_word et normalize ne sont pas décorées par @traced : elles sont appelées des
@@ -100,9 +83,10 @@ def deduplicate(quotes):
 
 
 @traced
-def classify(text):
+def classify(text, rules):
+    """Métadonnées d'une citation, d'après les règles `rules` (IngestRules) de sa persona."""
     lower = text.lower()
-    themes = [t for t, words in THEME_KEYWORDS.items() if any(contains_word(lower, w) for w in words)]
+    themes = [t for t, words in rules.themes.items() if any(contains_word(lower, w) for w in words)]
 
     words = len(text.split())
     length = "aphorisme" if words < 20 else "moyen" if words < 100 else "monologue"
@@ -114,31 +98,34 @@ def classify(text):
     else:
         tone = "affirmatif"
 
-    contexts = [SEARCH_CONTEXTS[t] for t in themes if t in SEARCH_CONTEXTS]
+    contexts = [rules.contexts[t] for t in themes if t in rules.contexts]
     return {
-        "themes": themes or ["sagesse"],
+        "themes": themes or [rules.default_theme],
         "tone": tone,
         "length": length,
-        "search_contexts": contexts or ["sagesse générale"],
+        "search_contexts": contexts or [rules.default_context],
         "word_count": words,
     }
 
 
 @traced
-def build_citations(markdown):
+def build_citations(markdown, rules):
     """Renvoie (nombre de citations brutes, liste des citations structurées)."""
     raw = extract_quotes(markdown)
     citations = [
-        {"id": f"quote_{i:03d}", "text": text, **classify(text)}
+        {"id": f"quote_{i:03d}", "text": text, **classify(text, rules)}
         for i, text in enumerate(deduplicate(raw), start=1)
     ]
     return len(raw), citations
 
 
 @traced
-def run(source: Path, destination: Path):
+def run(persona):
+    """citations.md de la persona -> data/<slug>/citations.json."""
+    source, destination = persona.citations_md, persona.citations_json
     log.debug("Lecture de %s", source)
-    raw_count, citations = build_citations(source.read_text(encoding="utf-8"))
+    raw_count, citations = build_citations(source.read_text(encoding="utf-8"), persona.ingest)
+    destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(citations, ensure_ascii=False, indent=2), encoding="utf-8")
     log.debug("%d citations écrites dans %s", len(citations), destination)
     return raw_count, citations
