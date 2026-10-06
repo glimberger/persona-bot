@@ -361,6 +361,37 @@ Le module ne remplace que la partie systemd. Le bot tourne toujours depuis le d�
 avec son `.venv` et son `.env` : les étapes 1 à 7 restent nécessaires, réglage « linger » de
 l'étape 5 compris.
 
+### Le piège du Python de Nix
+
+Avec Nix sur le Pi, tu as sans doute aussi direnv. En entrant dans le dossier du projet, il
+active le shell de développement du dépôt (`flake.nix`, voir le
+[README](../README.md#option--avec-nix)). Les premières versions de ce shell imposaient à uv
+le Python de Nix, et `persona index` échouait alors dès l'import de numpy :
+
+```
+ImportError: libstdc++.so.6: cannot open shared object file: No such file or directory
+```
+
+Le fichier existe pourtant (`/usr/lib/aarch64-linux-gnu/libstdc++.so.6`, la bibliothèque
+standard C++ de Debian). Les paquets binaires de PyPI (*wheels* : numpy, torch…) sont compilés
+pour un Linux classique et comptent sur ces bibliothèques système. Mais un programme construit
+par Nix, Python compris, cherche ses bibliothèques uniquement dans `/nix/store`, jamais dans
+`/usr/lib`.
+
+Le shell laisse maintenant uv utiliser **son propre Python** sur Linux
+(`UV_PYTHON_PREFERENCE=only-managed`). uv le télécharge une fois dans
+`~/.local/share/uv/python/` et ce Python, compilé pour un Linux classique, trouve `/usr/lib`. On
+a écarté l'autre solution courante, ajouter la `libstdc++` de Nix à `LD_LIBRARY_PATH` dans le
+shell : elle ne vaudrait que dans ce shell, et le service systemd, lancé hors de lui, retomberait
+en panne.
+
+Pour savoir quel Python utilise ton `.venv`, et le recréer s'il vient de Nix :
+
+```bash
+readlink -f .venv/bin/python          # /nix/store/... → à recréer
+rm -rf .venv && uv sync --managed-python
+```
+
 ### Importer le module
 
 Dans le `flake.nix` de ta configuration, ajoute le dépôt en entrée. `flake = false` : on veut

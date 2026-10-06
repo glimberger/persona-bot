@@ -44,10 +44,12 @@ uv sync                  # puis comme ci-dessus
 Avec [direnv](https://direnv.net), ce shell s'active tout seul quand tu entres dans le dossier
 (`.envrc` contient `use flake`) : lance `direnv allow` une fois.
 
-Dans ce shell, uv crée `.venv` avec le Python fourni par Nix. Un `.venv` lié à un Python
+Sur Mac, dans ce shell, uv crée `.venv` avec le Python fourni par Nix. Un `.venv` lié à un Python
 installé ailleurs casse quand ce Python disparaît (par exemple désinstallé de Homebrew) ; uv le
-recrée alors tout seul au prochain `uv run`. Les dépendances Python restent gérées par uv
-(`pyproject.toml`, `uv.lock`), avec ou sans Nix.
+recrée alors tout seul au prochain `uv run`. Sur Linux, le shell laisse au contraire uv
+utiliser son propre Python : avec celui de Nix, numpy ne s'importe pas
+([pourquoi](docs/DEPLOIEMENT_PI.md#le-piège-du-python-de-nix)). Les dépendances Python restent
+gérées par uv (`pyproject.toml`, `uv.lock`), avec ou sans Nix.
 
 ## Les personas
 

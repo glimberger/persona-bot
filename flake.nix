@@ -37,19 +37,29 @@
     {
       devShells = forAllSystems (pkgs: {
         # `nix develop` utilise `default` quand on ne nomme pas de shell.
-        default = pkgs.mkShell {
-          packages = [
-            pkgs.python3
-            pkgs.uv
-          ];
-
-          # uv crée .venv avec le Python de ce shell, au lieu d'en télécharger un ou d'en
-          # prendre un autre trouvé sur la machine. Piège évité : un .venv lié à un Python
+        default = pkgs.mkShell (
+          {
+            packages = [ pkgs.uv ] ++ pkgs.lib.optional pkgs.stdenv.isDarwin pkgs.python3;
+          }
+          # Sur Mac : uv crée .venv avec le Python de ce shell, au lieu d'en télécharger un ou
+          # d'en prendre un autre trouvé sur la machine. Piège évité : un .venv lié à un Python
           # installé ailleurs (par exemple par Homebrew) casse dès que ce Python disparaît.
           # Quand Nix met Python à jour, uv recrée .venv tout seul au prochain `uv run`.
-          UV_PYTHON = "${pkgs.python3}/bin/python3";
-          UV_PYTHON_DOWNLOADS = "never";
-        };
+          // pkgs.lib.optionalAttrs pkgs.stdenv.isDarwin {
+            UV_PYTHON = "${pkgs.python3}/bin/python3";
+            UV_PYTHON_DOWNLOADS = "never";
+          }
+          # Sur Linux (le Raspberry Pi), surtout pas le Python de Nix. Les paquets binaires de
+          # PyPI (numpy, torch…) sont compilés pour un Linux classique et chargent des
+          # bibliothèques système comme libstdc++.so.6. Un Python de Nix ne les cherche que
+          # dans /nix/store : "ImportError: libstdc++.so.6: cannot open shared object file"
+          # dès `import numpy`. uv utilise donc son propre Python (téléchargé une fois dans
+          # ~/.local/share/uv/python), compilé pour un Linux classique. Limite : sous NixOS,
+          # qui n'a pas de /usr/lib, ce Python-là ne démarre pas sans nix-ld.
+          // pkgs.lib.optionalAttrs pkgs.stdenv.isLinux {
+            UV_PYTHON_PREFERENCE = "only-managed";
+          }
+        );
       });
     };
 }
