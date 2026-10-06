@@ -18,6 +18,9 @@ allowed_patterns:
   # French prose in persona prompts: "passionné" and "passage" contain "pass".
   - "passionné"
   - "passage"
+  # Godefroy citations: "Passe moi", "passées".
+  - "Passe"
+  - "passées"
   # Documentation prose about secrets ("Tout passe par", "mot de passe", "les secrets").
   - "passe"
   - "secrets"
