@@ -18,4 +18,10 @@ allowed_patterns:
   # French prose in persona prompts: "passionné" and "passage" contain "pass".
   - "passionné"
   - "passage"
+  # Documentation prose about secrets ("Tout passe par", "mot de passe", "les secrets").
+  - "passe"
+  - "secrets"
+  # Names of the secret variables (their values live only in .env).
+  - "ANTHROPIC_API_KEY"
+  - "TELEGRAM_TOKEN_"
 version: "1.0"

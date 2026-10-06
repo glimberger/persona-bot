@@ -1,4 +1,5 @@
-# Service systemd "utilisateur" qui fait tourner le bot Telegram en permanence.
+# Service systemd "utilisateur" qui fait tourner les bots Telegram (un par persona, dans un
+# seul programme) en permanence.
 #
 # systemd est le gestionnaire de services de Linux : il démarre les programmes au boot,
 # les relance s'ils plantent et collecte leurs logs. Un service "utilisateur" tourne sous

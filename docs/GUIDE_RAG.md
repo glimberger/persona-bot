@@ -1,9 +1,12 @@
-# Comprendre le RAG avec le bot JCVD
+# Comprendre le RAG avec persona-bot
 
 Ce guide s'adresse à un·e développeur·se qui n'a jamais construit de RAG. Il suppose que tu
 maîtrises Python et que tu connais, au moins dans les grandes lignes, ce qu'est un LLM (un
 modèle, tel que Claude, qui génère du texte). Aucune autre connaissance préalable n'est
 requise.
+
+Le fil conducteur est la persona Jean-Claude Van Damme, la seule du projet qui s'appuie sur
+des citations. La section 10 montre ce qui change pour une persona qui n'en a pas.
 
 Tous les chiffres et exemples présentés ci-dessous proviennent d'exécutions réelles du code
 du projet ; tu peux donc les reproduire.
@@ -222,7 +225,7 @@ sentence-transformers. Il s'exécute **en local** sur ta machine : il ne requier
 API, ni frais d'utilisation. Claude ne peut pas être utilisé pour cette étape, car
 Anthropic ne propose pas d'API d'embeddings.
 
-Il est déclaré dans `src/jcvd_bot/config.py` :
+Il est déclaré dans `src/persona_bot/config.py` :
 
 ```python
 EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
@@ -244,13 +247,14 @@ même avec des millions de vecteurs, grâce à des index spécialisés. Elle sto
 - des métadonnées (ici : thèmes, ton, longueur).
 
 Le projet utilise **Chroma**, qui s'exécute en local et enregistre l'ensemble de ses données
-dans `data/chroma/`.
+dans `data/chroma/`. Chaque persona qui a des citations y a sa propre **collection**
+(l'équivalent d'une table), nommée d'après son slug : `citations_jcvd` pour JCVD.
 
-Extrait de `src/jcvd_bot/index.py` :
+Extrait de `src/persona_bot/index.py` :
 
 ```python
 collection = client.create_collection(
-    name=COLLECTION_NAME,
+    name=persona.collection_name,  # "citations_jcvd"
     embedding_function=embedding_function(),
     configuration={"hnsw": {"space": "cosine"}},
 )
@@ -281,8 +285,8 @@ Un RAG se décompose en deux phases qu'il convient de ne pas confondre.
 
 ```mermaid
 flowchart LR
-    MD["citations_jcvd.md<br>(89 blocs)"] -- "jcvd ingest<br>(nettoyage)" --> JSON["citations.json<br>(72 citations)"]
-    JSON -- "jcvd index<br>(vectorisation)" --> DB[("data/chroma/<br>(index)")]
+    MD["personas/jcvd/citations.md<br>(89 blocs)"] -- "persona ingest jcvd<br>(nettoyage)" --> JSON["data/jcvd/citations.json<br>(72 citations)"]
+    JSON -- "persona index jcvd<br>(vectorisation)" --> DB[("data/chroma/<br>(index)")]
 ```
 
 Cette phase n'est relancée que si les citations changent. La vectorisation de millions de
@@ -304,7 +308,7 @@ phase d'indexation, sans le modifier.
 
 ## 7. Parcours complet d'un message dans le code
 
-Suivons le message « J'ai peur d'échouer » à travers `src/jcvd_bot/bot.py`.
+Suivons le message « J'ai peur d'échouer », envoyé à JCVD, à travers `src/persona_bot/bot.py`.
 
 ### 7.1 Retrieval — `Retriever.search()` (`retriever.py`)
 
@@ -316,7 +320,7 @@ Chroma vectorise la question, identifie les 3 citations les plus proches et renv
 distances. Celles-ci sont converties en similarités, puis les citations dont la similarité
 est inférieure au seuil (`SIMILARITY_THRESHOLD = 0.2`) sont écartées.
 
-### 7.2 Augmentation — `JCVDBot.respond()` (`bot.py`)
+### 7.2 Augmentation — `PersonaBot.respond()` (`bot.py`)
 
 Les citations retenues sont insérées dans le message envoyé à Claude. Voici le message
 utilisateur que Claude reçoit effectivement :
@@ -337,8 +341,9 @@ La deuxième citation n'a guère de rapport avec l'échec : le retrieval n'est p
 
 En complément de ce message, Claude reçoit :
 
-- **Le prompt système** (`SYSTEM_PROMPT`), qui décrit la persona : ses thèmes, sa manière
-  de s'exprimer, et la consigne de ne pas inventer de fausses citations. Il est identique à
+- **Le prompt système** (`system_prompt` dans `personas/jcvd/persona.toml`), qui décrit la
+  persona : ses thèmes, sa manière de s'exprimer, et la consigne de ne pas inventer de
+  fausses citations. Il est identique à
   chaque appel ; c'est la raison pour laquelle les citations, qui varient, n'y figurent pas.
 
   Un exemple d'ajustement : une première version indiquait seulement que JCVD pose des
@@ -366,13 +371,13 @@ En complément de ce message, Claude reçoit :
 
 ### 7.3 Generation — l'appel au modèle de langage
 
-L'appel est isolé dans `src/jcvd_bot/llm.py`. Avec Claude :
+L'appel est isolé dans `src/persona_bot/llm.py`. Avec Claude :
 
 ```python
 client.beta.messages.create(
     model="claude-opus-5",
-    system=SYSTEM_PROMPT,
-    messages=history + [{"role": "user", "content": augmented}],
+    system=persona.system_prompt,
+    messages=history + [{"role": "user", "content": content}],
     output_config={"effort": "low"},
     ...
 )
@@ -414,7 +419,7 @@ seuil de 0,65 : avec ce modèle, il aurait éliminé toutes les citations.
 « simulait » les embeddings au moyen d'un hachage du texte (SHA-256). Le code s'exécutait
 sans erreur, mais la recherche renvoyait des citations aléatoires : un hachage ne porte
 aucune information de sens. Enseignement : teste toujours le retrieval isolément
-(`uv run jcvd search "..."`) avant de le relier au LLM. Si les résultats ne sont pas
+(`uv run persona search jcvd "..."`) avant de le relier au LLM. Si les résultats ne sont pas
 cohérents, le LLM ne pourra pas compenser ce défaut.
 
 **La qualité des données compte autant que le modèle.** Le fichier source contenait 17
@@ -438,9 +443,9 @@ score.
 
 ### Le jeu d'évaluation
 
-`data/eval_search.json` contient 30 questions. Pour chacune d'elles sont listées les
+`personas/jcvd/eval_search.json` contient 30 questions. Pour chacune d'elles sont listées les
 citations qui y répondent, identifiées par un fragment de leur texte (un identifiant tel que
-`quote_035` change dès que le fichier source est modifié). `uv run jcvd eval` calcule deux
+`quote_035` change dès que le fichier source est modifié). `uv run persona eval jcvd` calcule deux
 indicateurs :
 
 - **hit@3** : la bonne citation figure-t-elle parmi les 3 que le bot reçoit effectivement ?
@@ -495,47 +500,114 @@ Enseignements à retenir :
 - **Un petit LLM respecte mal les consignes de format** : ici, il numérotait ses questions
   et les mettait en italique malgré la consigne, ce qui a imposé un découpage tolérant.
 
-## 10. Exercices
+## 10. Une persona sans citations : quand le RAG n'est pas là
+
+Toutes les personas n'ont pas de citations. Pour un personnage inventé, ou pour quelqu'un
+dont on n'a pas rassemblé les paroles, il n'y a rien à chercher. Le projet gère ce cas : une
+persona sans fichier `citations.md` saute les étapes 1 et 2 du RAG (retrieval et
+augmentation). `PersonaBot` n'a alors pas de `Retriever`, et le message de l'utilisateur part
+tel quel au modèle, avec le prompt système et l'historique. Ce n'est plus du RAG : c'est un
+modèle de langage à qui on a donné un rôle.
+
+```mermaid
+flowchart LR
+    M[message] --> P["prompt système<br>+ historique + message"] --> L[LLM] --> Rep[réponse]
+```
+
+Conséquence pratique : pour cette persona, ni Chroma ni le modèle d'embeddings ne sont
+chargés, et `persona ingest`, `index`, `search` et `eval` n'ont rien à faire (ils le disent).
+
+### Ce que les citations apportent : une mesure
+
+Même question posée à JCVD avec Claude, une fois normalement, une fois avec la recherche
+désactivée (même prompt système, aucune citation ajoutée). Réponses réelles :
+
+> **Question** : « Que penses-tu de l'argent ? »
+>
+> **Avec RAG** (citations trouvées : « Il ne faut pas avoir peur de la réussite. Si on devient
+> riche, on peut devenir généreux… » à 0,444, « Au plus qu'on donne, au plus qu'on reçoit… »
+> à 0,351, et une troisième sur la monnaie unique à 0,314) : « L'argent, moi je dis qu'il ne
+> faut pas avoir peur de ça, […] si tu le fais circuler, si tu donnes, tu reçois encore plus,
+> c'est mathématique, c'est cosmique presque. […] le bonheur il n'était pas dans la piscine,
+> il était dans le fait de pouvoir aider ma famille, tu vois ? »
+>
+> **Sans RAG** : « L'argent, c'est comme l'eau, tu vois, ça doit couler, parce que si tu la
+> gardes dans un seau fermé elle devient verte, […] l'argent il attire des gens autour de toi
+> qui sourient pas pour toi mais pour le wallet, tu comprends ? »
+
+Les deux réponses sonnent juste : Claude connaît Jean-Claude Van Damme et le prompt
+système décrit précisément sa façon de parler. La différence est ailleurs. Avec le RAG, la
+réponse reprend deux idées que JCVD a **réellement** exprimées (ne pas avoir peur de la
+réussite, donner pour recevoir). Sans RAG, l'idée de l'eau qui croupit est plausible, mais
+inventée. Côté coût, les trois citations ont ajouté environ 150 tokens à la requête (1 420
+tokens lus avec, 1 268 sans).
+
+Une seule question ne prouve rien de général (voir la section 9 sur le bruit des petites
+mesures). Elle illustre le compromis :
+
+| | Avec citations (RAG) | Sans citations |
+|---|---|---|
+| Ce qui guide le modèle | Le prompt système **et** de vraies paroles, choisies à chaque message | Le prompt système seul |
+| Fidélité | Les idées viennent du personnage réel | Les idées sont plausibles, mais inventées par le modèle |
+| Travail à fournir | Rassembler, nettoyer, indexer et évaluer un corpus | Écrire un bon prompt système |
+| Dépend de ce que le modèle sait déjà | Peu : les citations apportent la matière | Beaucoup : un personnage peu connu ou inventé ne repose que sur le prompt |
+
+Pour un personnage inventé, le choix est vite fait : il n'existe pas de « vraies paroles ».
+Tout repose alors sur le prompt système, qui doit décrire la personnalité, la façon de parler
+et le format attendu aussi précisément que celui de JCVD (voir la section 7.2 sur les
+consignes qui se contredisent ou que le modèle interprète librement).
+
+**Piège : un prompt qui parle de citations absentes.** Le prompt de JCVD annonce au modèle
+des citations entre balises `<citations>`. Pour une persona sans citations, ne recopie pas
+ce paragraphe : le modèle attendrait des balises qui n'arrivent jamais. La mesure ci-dessus
+garde volontairement le prompt de JCVD intact pour ne changer qu'une seule chose, la
+présence des citations.
+
+## 11. Exercices
 
 Chaque exercice se réalise en quelques minutes et illustre un point précis.
 
 1. **Explorer le retrieval.** Pose tes propres questions avec
-   `uv run jcvd search "ta question"` (ajoute `-k 10` pour afficher davantage de résultats).
+   `uv run persona search jcvd "ta question"` (ajoute `-k 10` pour afficher davantage de résultats).
    Trouve une question pour laquelle les résultats sont mauvais, et tente d'en expliquer la
    raison.
 
-2. **Faire varier `k`.** Dans `src/jcvd_bot/config.py`, fixe `RETRIEVE_K` à 1, puis à 10,
+2. **Faire varier `k`.** Dans `src/persona_bot/config.py`, fixe `RETRIEVE_K` à 1, puis à 10,
    et converse avec le bot. Avec 1, les réponses s'appuient-elles davantage sur une
    citation ? Avec 10, sont-elles plus variées ou plus floues ?
 
-3. **Désactiver le retrieval.** Dans `src/jcvd_bot/bot.py`, remplace
-   `citations = self.retriever.search(user_message)` par `citations = []`. Compare les
-   réponses : la différence constitue l'apport concret du RAG.
+3. **Désactiver le retrieval.** Renomme temporairement `personas/jcvd/citations.md` (en
+   `citations.md.off` par exemple) : JCVD devient une persona sans citations. Pose les mêmes
+   questions avec `uv run --env-file .env persona ask jcvd "..."` avant et après. La
+   différence constitue l'apport concret du RAG (un exemple dans la section 10). Rends son
+   nom au fichier ensuite.
 
-4. **Filtrer par métadonnées.** Dans `src/jcvd_bot/retriever.py`, ajoute
+4. **Filtrer par métadonnées.** Dans `src/persona_bot/retriever.py`, ajoute
    `where={"tone": "questionnant"}` à l'appel `collection.query(...)`. Seules les citations
    de ce ton seront alors candidates.
 
-5. **Changer de modèle d'embeddings.** Note le score de `uv run jcvd eval`, remplace
+5. **Changer de modèle d'embeddings.** Note le score de `uv run persona eval jcvd`, remplace
    `EMBEDDING_MODEL` par `all-MiniLM-L6-v2` (un modèle entraîné principalement sur de
-   l'anglais), relance `jcvd index` puis `jcvd eval`. Dans quelle mesure le score
-   baisse-t-il sur les questions en français ? Rétablis ensuite le modèle d'origine et
-   relance `jcvd index`. Pour aller plus loin, essaie un modèle plus performant (par exemple
+   l'anglais), relance `persona index jcvd` puis `persona eval jcvd`. Dans quelle mesure le
+   score baisse-t-il sur les questions en français ? Rétablis ensuite le modèle d'origine et
+   relance `persona index jcvd`. Pour aller plus loin, essaie un modèle plus performant (par exemple
    via l'API Voyage AI) : le score progresse-t-il ?
 
 6. **Comparer deux modèles de langage.** Pose les mêmes questions avec
-   `uv run jcvd ask "..."`, une fois avec Claude, une fois avec `LLM_BACKEND=ollama`.
+   `uv run persona ask jcvd "..."`, une fois avec Claude, une fois avec `LLM_BACKEND=ollama`.
    Compare les mesures affichées (mots, phrases, question finale) ainsi que le style.
    Quelles consignes du prompt le petit modèle respecte-t-il, et lesquelles ignore-t-il ?
 
-7. **Changer de persona.** Remplace `data/citations_jcvd.md` par les citations d'une autre
-   personne, adapte `SYSTEM_PROMPT`, puis relance les étapes 1 et 2. Le reste du code
-   demeure inchangé.
+7. **Créer une persona.** Ajoute un dossier dans `personas/` en suivant le
+   [README](../README.md#les-personas) : d'abord sans citations, puis, si tu trouves de
+   vraies paroles de ton personnage, avec un `citations.md`. Le code reste inchangé.
 
 ---
 
-## 11. Glossaire
+## 12. Glossaire
 
+- **Persona** : personnage incarné par le modèle de langage, décrit par un dossier de
+  `personas/` (prompt système, messages, citations facultatives).
 - **LLM** (*Large Language Model*) : modèle qui génère du texte, ici Claude ou un modèle
   open source exécuté par Ollama.
 - **RAG** (*Retrieval-Augmented Generation*) : technique consistant à rechercher des
@@ -556,10 +628,11 @@ Chaque exercice se réalise en quelques minutes et illustre un point précis.
 - **Indexation** : phase préalable au cours de laquelle les documents sont vectorisés et
   stockés.
 - **Jeu d'évaluation** : ensemble de questions fixées à l'avance, accompagnées de leur
-  réponse attendue, qui permet de mesurer la qualité de la recherche (`jcvd eval`).
+  réponse attendue, qui permet de mesurer la qualité de la recherche (`persona eval`).
 - **hit@3, MRR** : indicateurs de qualité de la recherche (présence de la bonne citation
   parmi les 3 premières ; rang réciproque moyen de la bonne citation).
 - **Retrieval** : phase de recherche des documents proches d'une question.
-- **Prompt système** : instructions permanentes fournies au LLM (ici, la persona JCVD).
+- **Prompt système** : instructions permanentes fournies au LLM (ici, la description de la
+  persona).
 - **Contexte** : ensemble des éléments que le LLM reçoit lors d'un appel (prompt système,
   historique, citations).

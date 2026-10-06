@@ -1,4 +1,5 @@
-# Module home-manager qui fait tourner le bot Telegram comme service systemd "utilisateur".
+# Module home-manager qui fait tourner les bots Telegram (un par persona) comme service
+# systemd "utilisateur".
 #
 # C'est la variante Nix de deploy/persona-bot.service : le même service, mais déclaré dans la
 # configuration home-manager de la machine au lieu d'être activé à la main avec

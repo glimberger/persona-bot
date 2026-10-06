@@ -9,7 +9,7 @@ Un PersonaBot fait parler une persona (voir personas.py). À chaque message :
 
 Une persona sans citations saute les étapes 1 et 2 : le message part tel quel, et le
 modèle ne s'appuie que sur le prompt système. Ce n'est plus du RAG, juste un modèle de
-langage à qui on a donné un rôle (voir docs/GUIDE_RAG.md, section 9).
+langage à qui on a donné un rôle (voir docs/GUIDE_RAG.md, section 10).
 
 L'historique est renvoyé à chaque appel (l'API ne garde aucune mémoire),
 ce qui permet une vraie conversation sur plusieurs tours. Le bot garde un
