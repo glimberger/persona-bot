@@ -16,21 +16,21 @@ Ce qui diffère :
 - Un modèle local a une fenêtre de contexte (la quantité de texte lue d'un coup) bien plus
   petite. Si le prompt système, les citations et l'historique la dépassent, Ollama tronque
   le début sans erreur : le bot perdrait sa personnalité. On règle cette taille côté serveur
-  (OLLAMA_CONTEXT_LENGTH, voir README) et on la vérifie avec `jcvd --debug`.
+  (OLLAMA_CONTEXT_LENGTH, voir README) et on la vérifie avec `persona --debug`.
 """
 
 import logging
 
 import anthropic
 
-from jcvd_bot.config import (
+from persona_bot.config import (
     CLAUDE_MODEL,
     MAX_RESPONSE_TOKENS,
     OLLAMA_BASE_URL,
     OLLAMA_MAX_TOKENS,
     OLLAMA_MODEL,
 )
-from jcvd_bot.logs import traced
+from persona_bot.logs import traced
 
 log = logging.getLogger(__name__)
 

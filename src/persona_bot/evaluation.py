@@ -20,8 +20,8 @@ Un jeu uniquement "facile" donne un score flatteur qui ne mesure presque rien.
 import json
 import logging
 
-from jcvd_bot.config import RETRIEVE_K
-from jcvd_bot.logs import traced
+from persona_bot.config import RETRIEVE_K
+from persona_bot.logs import traced
 
 log = logging.getLogger(__name__)
 

@@ -7,4 +7,24 @@ fileignoreconfig:
   # .envrc (direnv) matches the `.env` file name pattern; it only contains `use flake`.
   - filename: .envrc
     ignore_detectors: [filename]
+  # .env.example is the template copied to .env: it lists the variables with empty values.
+  # Only the file name check is skipped; its content is still scanned for secrets.
+  - filename: .env.example
+    ignore_detectors: [filename]
+# Words that look like secrets to Talisman's pattern detector but are not.
+allowed_patterns:
+  # Fake Telegram token used by tests/test_logs.py to check that tokens are masked in logs.
+  - "123456:TOKEN-SECRET"
+  # French prose in persona prompts: "passionné" and "passage" contain "pass".
+  - "passionné"
+  - "passage"
+  # Godefroy citations: "Passe moi", "passées".
+  - "Passe"
+  - "passées"
+  # Documentation prose about secrets ("Tout passe par", "mot de passe", "les secrets").
+  - "passe"
+  - "secrets"
+  # Names of the secret variables (their values live only in .env).
+  - "ANTHROPIC_API_KEY"
+  - "TELEGRAM_TOKEN_"
 version: "1.0"

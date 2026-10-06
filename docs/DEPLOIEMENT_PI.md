@@ -1,7 +1,9 @@
-# Déployer le bot sur un Raspberry Pi
+# Déployer les bots sur un Raspberry Pi
 
-Ce document décrit l'installation du bot Telegram sur un Raspberry Pi pour qu'il tourne en
-permanence, telle qu'elle a été faite pour ce projet. Tous les chiffres ont été mesurés sur
+Ce document décrit l'installation des bots Telegram (un par persona, tous servis par le même
+programme) sur un Raspberry Pi pour qu'ils tournent en permanence, telle qu'elle a été faite
+pour ce projet. Tu as installé le projet quand il s'appelait « JCVD Bot » ? Voir la
+[section 14](#14-migrer-depuis-jcvd-bot). Tous les chiffres ont été mesurés sur
 un **Raspberry Pi 5 avec 8 Go de RAM** et une carte microSD de 128 Go, avec Claude comme
 modèle de langage.
 
@@ -152,16 +154,16 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 source ~/.local/bin/env        # ajoute ~/.local/bin au PATH dans cette session
 
 mkdir -p ~/projects && cd ~/projects
-git clone https://github.com/glimberger/JeanClaude.git
-cd JeanClaude
+git clone https://github.com/glimberger/persona-bot.git
+cd persona-bot
 uv sync                        # environnement Python et dépendances (~1,3 Go)
-uv run jcvd ingest && uv run jcvd index
-uv run jcvd eval               # doit donner les mêmes scores que sur ton ordinateur
+uv run persona ingest && uv run persona index
+uv run persona eval            # doit donner les mêmes scores que sur ton ordinateur
 ```
 
 Le dépôt étant public, le Pi le clone en HTTPS : il n'a besoin d'aucun accès à ton compte
-GitHub. `jcvd index` télécharge le modèle d'embeddings (quelques centaines de Mo) à son
-premier lancement : **47 s** au total sur le Pi. `jcvd eval` y donne exactement les mêmes
+GitHub. `persona index` télécharge le modèle d'embeddings (quelques centaines de Mo) à son
+premier lancement : **47 s** au total sur le Pi. `persona eval` y donne exactement les mêmes
 scores que sur le Mac de développement.
 
 ### PyTorch : la version CPU, pas la version CUDA
@@ -188,9 +190,9 @@ contenait encore la version CUDA de PyTorch installée lors d'un premier essai. 
 sans risque (ici, 5,0 Go libérés : la carte est passée de 11 Go à 5,7 Go utilisés) :
 
 ```bash
-systemctl --user stop jcvd-bot     # si le service est déjà installé (étape 9)
+systemctl --user stop persona-bot     # si le service est déjà installé (étape 9)
 uv cache clean                     # la prochaine réinstallation complète retéléchargera les paquets
-systemctl --user start jcvd-bot
+systemctl --user start persona-bot
 ```
 
 Arrête d'abord le bot : `uv run`, qui le fait tourner, verrouille le cache pour qu'on ne
@@ -214,21 +216,21 @@ Le fichier `.env` (clés et token, voir [`.env.example`](../.env.example)) n'est
 GitHub, et c'est voulu. Copie-le depuis ton ordinateur :
 
 ```bash
-ssh agent-pi 'umask 077; cat > ~/projects/JeanClaude/.env' < .env
+ssh agent-pi 'umask 077; cat > ~/projects/persona-bot/.env' < .env
 ```
 
 `umask 077` fait que le fichier est créé directement avec des droits réservés à ton
 utilisateur (`-rw-------`), sans instant où il serait lisible par d'autres. `HF_HUB_OFFLINE=1`
 convient au Pi, puisque le modèle d'embeddings y est déjà téléchargé.
 
-**Arrête le bot sur ton ordinateur** s'il tourne : Telegram n'accepte qu'un programme à la
-fois par bot (voir le README, [erreur « Une autre instance du bot
-tourne déjà »](../README.md#étape-4--brancher-le-bot-sur-telegram-jcvd-telegram-telegram_apppy)).
+**Arrête les bots sur ton ordinateur** s'ils tournent : Telegram n'accepte qu'un programme à
+la fois par bot (voir le README, [erreur « Une autre instance du bot
+tourne déjà »](../README.md#étape-4--brancher-les-personas-sur-telegram-persona-telegram-telegram_apppy)).
 
 Test de bout en bout, depuis le Pi :
 
 ```bash
-uv run --env-file .env jcvd ask "J'ai peur d'échouer"
+uv run --env-file .env persona ask jcvd "J'ai peur d'échouer"
 ```
 
 Mesuré : **6,8 s** pour la réponse complète (recherche des citations comprise), comme sur le
@@ -238,16 +240,16 @@ Mac. C'est Claude qui fait l'essentiel du travail, pas le Pi.
 
 ## 8. Pourquoi un service
 
-Lancer `jcvd telegram` dans un terminal ne suffit pas : le bot s'arrête dès que tu fermes la
+Lancer `persona telegram` dans un terminal ne suffit pas : les bots s'arrêtent dès que tu fermes la
 session, et il ne redémarre ni après une coupure de courant ni après un plantage. On le confie
 donc à **systemd**, le gestionnaire de services de Linux, qui démarre les programmes au boot,
 les relance s'ils plantent et collecte leurs logs.
 
-Le fichier [`deploy/jcvd-bot.service`](../deploy/jcvd-bot.service) décrit le service
+Le fichier [`deploy/persona-bot.service`](../deploy/persona-bot.service) décrit le service
 (chaque ligne y est commentée). C'est un **service utilisateur** : il tourne sous ton compte,
 sans droits administrateur, et se gère sans `sudo`. Il :
 
-- lance `uv run --frozen --env-file .env jcvd telegram` depuis le dossier du projet
+- lance `uv run --frozen --env-file .env persona telegram` depuis le dossier du projet
   (`--frozen` : utilise `uv.lock` tel quel, sans jamais le modifier) ;
 - relance le bot 10 s après un plantage (`Restart=on-failure`). Si le réseau n'est pas prêt
   au démarrage, le bot s'arrête faute de joindre Telegram, et c'est cette relance qui fait la
@@ -271,7 +273,7 @@ les mêmes.
 
 ```bash
 ssh agent-pi
-systemctl --user enable --now ~/projects/JeanClaude/deploy/jcvd-bot.service
+systemctl --user enable --now ~/projects/persona-bot/deploy/persona-bot.service
 ```
 
 `enable` crée un lien vers le fichier du dépôt (il sera donc à jour après un `git pull`) et
@@ -280,13 +282,13 @@ active le démarrage au boot ; `--now` le démarre tout de suite.
 Commandes utiles :
 
 ```bash
-systemctl --user status jcvd-bot       # état du service
-systemctl --user restart jcvd-bot      # redémarrer le bot
-systemctl --user stop jcvd-bot         # l'arrêter (par exemple pour tester sur ton ordinateur)
-journalctl --user-unit jcvd-bot -f     # suivre les logs en direct (Ctrl+C pour quitter)
+systemctl --user status persona-bot       # état du service
+systemctl --user restart persona-bot      # redémarrer le bot
+systemctl --user stop persona-bot         # l'arrêter (par exemple pour tester sur ton ordinateur)
+journalctl --user-unit persona-bot -f     # suivre les logs en direct (Ctrl+C pour quitter)
 ```
 
-**Attention à la commande des logs** : `journalctl --user -u jcvd-bot` ne trouve rien ici,
+**Attention à la commande des logs** : `journalctl --user -u persona-bot` ne trouve rien ici,
 car les logs des services utilisateur arrivent dans le journal du système. `--user-unit` les
 y retrouve ; ton compte y a accès parce qu'il fait partie du groupe `adm`.
 
@@ -295,22 +297,27 @@ le journal, au lieu d'attendre en mémoire tampon) et `TQDM_DISABLE=1` (pas de b
 progression au chargement du modèle, qui apparaîtrait comme une ligne illisible
 `[146B blob data]`).
 
-Pour le mode debug, ajoute `JCVD_DEBUG=1` dans `.env` puis redémarre le service (voir le
+Pour le mode debug, ajoute `PERSONA_DEBUG=1` dans `.env` puis redémarre le service (voir le
 README, [Mode debug](../README.md#mode-debug)).
 
 ---
 
-## 10. Mettre à jour le bot
+## 10. Mettre à jour les bots
 
 ```bash
 ssh agent-pi
-cd ~/projects/JeanClaude
+cd ~/projects/persona-bot
 git pull
-uv run jcvd ingest && uv run jcvd index   # seulement si les citations ont changé
-systemctl --user restart jcvd-bot
+uv run persona ingest && uv run persona index   # seulement si des citations ont changé
+systemctl --user restart persona-bot
 ```
 
 `uv run` remet l'environnement à jour tout seul si `uv.lock` a changé.
+
+**Ajouter une persona sur le Pi** : après le `git pull` qui l'apporte, ajoute son
+`TELEGRAM_TOKEN_<SLUG>` dans le `.env` du Pi (`nano ~/projects/persona-bot/.env`), puis
+redémarre le service. Au démarrage, le journal affiche une ligne `Bot @…_bot démarré` par
+persona.
 
 ---
 
@@ -322,9 +329,14 @@ systemctl --user restart jcvd-bot
 | Chargement du modèle d'embeddings | 10,5 à 16,5 s selon les essais |
 | Une recherche de citations | 60 ms (6 ms sur un Mac M5) |
 | Réponse complète avec Claude | 6,8 s |
-| Mémoire du bot en service | environ 1,1 Go (6,7 Go restent libres) |
+| Mémoire du bot en service (persona JCVD seule) | environ 1,1 Go (6,7 Go restent libres) |
 | Environnement Python (`.venv`) | 1,3 Go (+ 458 Mo pour le modèle d'embeddings) |
 | Température | 47 à 49 °C, aucun ralentissement (`vcgencmd get_throttled` = `0x0`) |
+
+Ces mesures datent de l'époque où le programme ne servait que JCVD. Une persona sans
+citations ne charge pas de second modèle d'embeddings (il est partagé, et elle n'en a de
+toute façon pas besoin) : elle devrait ajouter peu de mémoire, mais ce n'est pas encore
+mesuré sur le Pi.
 
 Avec Ollama sur le Pi (`LLM_BACKEND=ollama`), c'est le Pi lui-même qui écrit la réponse : de
 48 à 89 s avec `ministral-3:3b`. Mesures complètes et explication dans la
@@ -339,9 +351,9 @@ paquets qui décrit un environnement dans des fichiers texte) et **home-manager*
 qui décrit l'environnement d'un utilisateur : programmes, fichiers de configuration,
 services). C'est le cas du Pi de ce projet.
 
-Au lieu d'activer `deploy/jcvd-bot.service` à la main (étape 9), tu déclares le service dans
-ta configuration home-manager. Le fichier [`deploy/jcvd-bot.nix`](../deploy/jcvd-bot.nix)
-est un **module** home-manager : il décrit le même service que `deploy/jcvd-bot.service`,
+Au lieu d'activer `deploy/persona-bot.service` à la main (étape 9), tu déclares le service dans
+ta configuration home-manager. Le fichier [`deploy/persona-bot.nix`](../deploy/persona-bot.nix)
+est un **module** home-manager : il décrit le même service que `deploy/persona-bot.service`,
 et home-manager se charge de l'écrire, de l'activer au démarrage et de le relancer quand sa
 définition change.
 
@@ -355,8 +367,8 @@ Dans le `flake.nix` de ta configuration, ajoute le dépôt en entrée. `flake = 
 seulement ses fichiers, pas un flake.
 
 ```nix
-inputs.jeanclaude = {
-  url = "github:glimberger/JeanClaude";
+inputs.persona-bot = {
+  url = "github:glimberger/persona-bot";
   flake = false;
 };
 ```
@@ -366,21 +378,21 @@ Puis, dans les modules de la configuration home-manager du Pi :
 ```nix
 modules = [
   # … tes autres modules
-  "${jeanclaude}/deploy/jcvd-bot.nix"
+  "${persona-bot}/deploy/persona-bot.nix"
 ];
 ```
 
 Et dans la configuration du Pi :
 
 ```nix
-services.jcvd-bot.enable = true;
+services.persona-bot.enable = true;
 ```
 
 | Option | Par défaut | Rôle |
 |---|---|---|
-| `services.jcvd-bot.enable` | `false` | active le service |
-| `services.jcvd-bot.directory` | `%h/projects/JeanClaude` | dossier du dépôt cloné (`%h` : ton dossier personnel) |
-| `services.jcvd-bot.package` | `pkgs.uv` | le `uv` qui lance le bot |
+| `services.persona-bot.enable` | `false` | active le service |
+| `services.persona-bot.directory` | `%h/projects/persona-bot` | dossier du dépôt cloné (`%h` : ton dossier personnel) |
+| `services.persona-bot.package` | `pkgs.uv` | le `uv` qui lance le bot |
 
 ### Passer du service manuel au module
 
@@ -388,7 +400,7 @@ Si tu as suivi l'étape 9, désactive d'abord l'ancien service : son lien dans
 `~/.config/systemd/user/` gênerait home-manager, qui veut y écrire son propre fichier.
 
 ```bash
-systemctl --user disable --now jcvd-bot
+systemctl --user disable --now persona-bot
 home-manager switch --flake <ta-configuration>
 ```
 
@@ -402,11 +414,11 @@ ne changent pas.
 ### Mettre à jour le module
 
 Ta configuration fige la version du dépôt dans son `flake.lock`. Après une modification de
-`deploy/jcvd-bot.nix`, un `git pull` du projet ne suffit pas : mets à jour l'entrée dans ta
+`deploy/persona-bot.nix`, un `git pull` du projet ne suffit pas : mets à jour l'entrée dans ta
 configuration, puis applique-la.
 
 ```bash
-nix flake update jeanclaude
+nix flake update persona-bot
 home-manager switch --flake <ta-configuration>
 ```
 
@@ -444,8 +456,8 @@ Puis `home-manager switch --flake <ta-configuration>`. home-manager crée un ser
 utilisateur `ollama.service`, comme celui du bot. Il n'écoute que sur le Pi
 (`127.0.0.1:11434`) : la valeur par défaut d'`OLLAMA_BASE_URL` (`http://localhost:11434`)
 convient donc, sans rien ouvrir sur le réseau. Le service du bot démarre après lui
-(`After=ollama.service` dans [`deploy/jcvd-bot.service`](../deploy/jcvd-bot.service) et
-`deploy/jcvd-bot.nix`). Ce n'est qu'un ordre de démarrage : sans Ollama, la ligne n'a aucun
+(`After=ollama.service` dans [`deploy/persona-bot.service`](../deploy/persona-bot.service) et
+`deploy/persona-bot.nix`). Ce n'est qu'un ordre de démarrage : sans Ollama, la ligne n'a aucun
 effet.
 
 **Sans Nix**, le script officiel installe Ollama comme service **système** (il demande
@@ -462,7 +474,7 @@ ollama pull ministral-3:3b             # 3,0 Go, 1 min 24 s sur ce Pi
 ```
 
 Dans le `.env` du Pi, ajoute `LLM_BACKEND=ollama`, puis redémarre le bot
-(`systemctl --user restart jcvd-bot`). Pour revenir à Claude, retire la ligne (ou mets
+(`systemctl --user restart persona-bot`). Pour revenir à Claude, retire la ligne (ou mets
 `LLM_BACKEND=claude`) et redémarre. Garde ta clé d'API Anthropic dans `.env` : tu pourras ainsi
 revenir à Claude sans recopier la clé.
 
@@ -487,7 +499,7 @@ première fois sur la carte SD.
 ### Mesures
 
 Ollama 0.34.4 sur le Pi 5 (8 Go), modèle déjà chargé (sauf la colonne « Chargement »).
-5 questions, chacune dans une conversation neuve, avec `uv run jcvd ask` : « J'ai peur
+5 questions, chacune dans une conversation neuve, avec `uv run persona ask jcvd` : « J'ai peur
 d'échouer », « Comment devenir meilleur ? », « C'est quoi le bonheur pour toi ? », « Je
 n'arrive pas à me motiver le matin », « Que penses-tu de l'amour ? ».
 
@@ -520,4 +532,58 @@ phrases qui n'existent pas en français (« une énergie qui ne se loin de passe
 nuisserie »). Un milliard de paramètres ne suffit pas pour tenir ce prompt.
 
 Pendant l'attente, Telegram affiche « en train d'écrire… » jusqu'à la réponse (README,
-[Points de conception](../README.md#étape-4--brancher-le-bot-sur-telegram-jcvd-telegram-telegram_apppy)).
+[Points de conception](../README.md#étape-4--brancher-les-personas-sur-telegram-persona-telegram-telegram_apppy)).
+
+---
+
+## 14. Migrer depuis JCVD Bot
+
+Le projet s'appelait « JCVD Bot » : dépôt `JeanClaude`, service `jcvd-bot`, commande `jcvd`.
+Il continue dans un nouveau dépôt, `persona-bot`, qui reprend son historique (l'ancien reste
+figé à la version JCVD Bot). Sur un Pi installé à cette époque, le service, le dossier, deux variables de `.env` et l'index
+changent de nom. Le résumé côté ordinateur est dans le README,
+[Migrer depuis JCVD Bot](../README.md#migrer-depuis-jcvd-bot) ; voici la procédure sur le Pi.
+
+**Arrête et désactive l'ancien service en premier**, avant le `git pull` : systemd le lance
+depuis `deploy/jcvd-bot.service`, que le pull supprime. Désactivé après coup, il laisserait
+un lien cassé dans `~/.config/systemd/user/`.
+
+```bash
+ssh agent-pi
+systemctl --user disable --now jcvd-bot
+
+cd ~/projects/JeanClaude
+git remote set-url origin https://github.com/glimberger/persona-bot.git
+git pull
+
+# Nouveau nom du dossier. .venv contient des chemins absolus : on le recrée (étape 6).
+cd .. && mv JeanClaude persona-bot && cd persona-bot
+rm -rf .venv && uv sync
+
+# .env : un token par persona, et le nouveau nom de la variable de debug.
+sed -i 's/^TELEGRAM_BOT_TOKEN=/TELEGRAM_TOKEN_JCVD=/; s/^JCVD_DEBUG=/PERSONA_DEBUG=/' .env
+
+# L'index est maintenant rangé par persona (collection citations_jcvd) : on le reconstruit.
+rm -rf data/chroma && uv run persona ingest && uv run persona index
+uv run persona eval            # mêmes scores qu'avant la migration
+
+systemctl --user enable --now ~/projects/persona-bot/deploy/persona-bot.service
+journalctl --user-unit persona-bot -f
+```
+
+Dans le journal, `Bot @…_bot démarré (persona jcvd)` confirme que tout fonctionne. Les bots
+sont arrêtés depuis la première commande : compte quelques minutes de coupure, l'essentiel
+pour reconstruire l'index.
+
+**Avec Nix et home-manager** ([section 12](#12-variante-avec-nix-et-home-manager)) : fais
+toutes les étapes ci-dessus sauf les deux commandes `systemctl` (home-manager gère le
+service). Dans ta configuration, renomme l'entrée `jeanclaude` en `persona-bot` (nouvelle
+adresse `github:glimberger/persona-bot`), importe `deploy/persona-bot.nix` au lieu de
+`deploy/jcvd-bot.nix` et remplace `services.jcvd-bot` par `services.persona-bot`. Puis :
+
+```bash
+nix flake update persona-bot
+home-manager switch --flake <ta-configuration>
+```
+
+home-manager supprime alors l'ancien service et installe le nouveau.

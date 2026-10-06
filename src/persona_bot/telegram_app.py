@@ -1,25 +1,30 @@
 """
-Étape 4 : brancher le bot sur Telegram.
+Étape 4 : brancher les personas sur Telegram.
 
 Ce module n'est qu'un adaptateur : il reçoit les messages Telegram, les passe
-à JCVDBot (le même que dans le terminal) et renvoie la réponse.
+au PersonaBot (le même que dans le terminal) et renvoie la réponse.
 
-Le bot fonctionne en "long polling" : c'est lui qui demande sans arrêt à Telegram
+Un bot Telegram par persona : chacune a son propre token (créé avec @BotFather), donc son
+propre nom, sa propre photo et sa propre conversation dans Telegram. Tous ces bots tournent
+dans un seul processus Python (voir run_all), qui partage le modèle d'embeddings.
+
+Chaque bot fonctionne en "long polling" : c'est lui qui demande sans arrêt à Telegram
 s'il y a de nouveaux messages. Il ne fait que des connexions sortantes : aucun
 port à ouvrir, il fonctionne derrière n'importe quelle box.
 """
 
 import asyncio
 import logging
+import signal
 
 import anthropic
 from telegram import Update
 from telegram.constants import ChatAction, MessageLimit
-from telegram.error import Conflict, NetworkError, TelegramError
+from telegram.error import Conflict, InvalidToken, NetworkError, TelegramError
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
-from jcvd_bot.config import LLM_BACKEND
-from jcvd_bot.logs import traced
+from persona_bot.config import LLM_BACKEND
+from persona_bot.logs import traced
 
 log = logging.getLogger(__name__)
 
@@ -58,22 +63,24 @@ def is_allowed(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
     return False
 
 
+def message(context, name):
+    """Phrase `name` de la persona servie par ce bot Telegram (voir persona.toml, [messages])."""
+    return context.bot_data["bot"].persona.messages[name]
+
+
 @traced
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_allowed(update, context):
         return
-    await update.message.reply_text(
-        "Salut ! Moi c'est Jean-Claude. Pose-moi une question, on va parler de la vie, "
-        "de l'awareness... Tu comprends ?\n\n/reset pour recommencer une conversation."
-    )
+    await update.message.reply_text(message(context, "welcome"))
 
 
 @traced
 async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_allowed(update, context):
         return
-    context.bot_data["jcvd"].reset(update.effective_chat.id)
-    await update.message.reply_text("OK, on repart de zéro. Nouveau cycle, nouvelle roue !")
+    context.bot_data["bot"].reset(update.effective_chat.id)
+    await update.message.reply_text(message(context, "reset"))
 
 
 @traced
@@ -107,19 +114,19 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # respond() est bloquant (recherche + appel à Claude, plusieurs secondes) :
         # on l'exécute dans un thread pour ne pas figer la boucle asynchrone de Telegram.
         answer, citations = await asyncio.to_thread(
-            context.bot_data["jcvd"].respond, update.message.text, update.effective_chat.id
+            context.bot_data["bot"].respond, update.message.text, update.effective_chat.id
         )
     # Claude et Ollama passent par le même SDK (voir llm.py) : les exceptions sont les mêmes.
     except anthropic.RateLimitError:
         log.warning("Limite de débit du modèle de langage atteinte (%s)", LLM_BACKEND)
-        answer = "Doucement, doucement... Laisse-moi respirer une minute et réessaie."
+        answer = message(context, "rate_limit")
     except anthropic.APIStatusError as e:
         log.error("Erreur du modèle de langage (%s, HTTP %s) : %s", LLM_BACKEND, e.status_code, e.message)
-        answer = "Aïe, mon cerveau a fait un grand écart. Réessaie dans un moment."
+        answer = message(context, "api_error")
     except anthropic.APIConnectionError:
         # Avec Ollama : le serveur est arrêté, ou OLLAMA_BASE_URL est fausse.
         log.error("Impossible de joindre le modèle de langage (%s)", LLM_BACKEND)
-        answer = "Je n'arrive pas à me connecter... comme l'air, ça existe et ça n'existe pas."
+        answer = message(context, "connection_error")
     else:
         log.info("Réponse envoyée (%d citations utilisées)", len(citations))
     finally:
@@ -153,14 +160,100 @@ async def on_error(update: object, context: ContextTypes.DEFAULT_TYPE):
 
 
 # Pas de @traced ici : le décorateur journalise les arguments, et `token` est un secret.
-def build_application(token, allowed_users, jcvd):
+def build_application(token, allowed_users, bot):
+    """Une Application Telegram (un bot BotFather) qui sert un PersonaBot."""
     app = Application.builder().token(token).build()
-    # bot_data est un dictionnaire partagé par tous les handlers.
-    app.bot_data["jcvd"] = jcvd
+    # bot_data est un dictionnaire partagé par tous les handlers de CETTE application : chaque
+    # bot Telegram retrouve ainsi sa propre persona.
+    app.bot_data["bot"] = bot
     app.bot_data["allowed_users"] = allowed_users
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("reset", reset))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_message))
     app.add_error_handler(on_error)
-    log.debug("Application Telegram prête, %d utilisateur(s) autorisé(s)", len(allowed_users))
+    log.debug(
+        "Application Telegram prête pour la persona %s, %d utilisateur(s) autorisé(s)",
+        bot.persona.slug,
+        len(allowed_users),
+    )
     return app
+
+
+# Signaux qui demandent l'arrêt : Ctrl+C (SIGINT), systemctl stop (SIGTERM) et SIGABRT,
+# les mêmes que ceux qu'écoute run_polling().
+STOP_SIGNALS = (signal.SIGINT, signal.SIGTERM, signal.SIGABRT)
+
+
+@traced
+async def run_all(applications, stop=None):
+    """
+    Fait tourner plusieurs bots Telegram dans le même processus, jusqu'à un signal d'arrêt.
+
+    Avec un seul bot, `app.run_polling()` suffit. Mais cette méthode prend la main sur toute la
+    boucle asyncio (la boucle d'événements qui fait avancer les tâches asynchrones) et ne rend
+    la main qu'à l'arrêt : impossible d'en lancer une deuxième à côté. On refait donc à la main
+    ce qu'elle fait, dans le même ordre, pour chaque application :
+      démarrage : initialize() -> updater.start_polling() -> start()
+      arrêt     : updater.stop() -> stop() -> shutdown(), dans l'ordre inverse.
+
+    Pourquoi un seul processus plutôt qu'un service par persona ? Le modèle d'embeddings,
+    qui occupe la plus grosse part de la mémoire, n'est alors chargé qu'une fois (voir
+    index.py). Sur un Raspberry Pi, ça compte.
+
+    `stop` : un asyncio.Event à déclencher pour arrêter. Les tests le fournissent ; sinon, on
+    en crée un que les signaux d'arrêt déclenchent.
+    """
+    loop = asyncio.get_running_loop()
+    own_signals = stop is None
+    if own_signals:
+        stop = asyncio.Event()
+        # add_signal_handler : à la réception du signal, asyncio appelle stop.set() au lieu de
+        # tuer le programme. L'arrêt se fait ainsi proprement, dans le bloc finally ci-dessous.
+        for sig in STOP_SIGNALS:
+            loop.add_signal_handler(sig, stop.set)
+
+    launched = []
+    try:
+        for app in applications:
+            # Ajouté avant initialize() : si elle échoue à mi-chemin, shutdown() libère quand même
+            # ce qui a été ouvert (comme run_polling ; shutdown ne fait rien si rien n'a démarré).
+            launched.append(app)
+            # initialize() contacte Telegram (getMe) : un token faux ou un réseau absent échoue ici.
+            try:
+                await app.initialize()
+            except InvalidToken:
+                # Le message d'origine de la librairie contient le token en clair : il finirait
+                # dans le terminal ou le journal systemd. "from None" empêche Python de
+                # l'afficher comme cause de notre erreur.
+                slug = app.bot_data["bot"].persona.slug
+                raise SystemExit(
+                    f"Token Telegram refusé pour la persona {slug} : vérifie TELEGRAM_TOKEN_{slug.upper()} "
+                    "dans .env (copie-le à nouveau depuis @BotFather)."
+                ) from None
+
+            # Les erreurs de récupération des messages (réseau, Conflict...) passent par nos
+            # gestionnaires d'erreurs (on_error), comme le fait run_polling().
+            def error_callback(error, app=app):
+                app.create_task(app.process_error(error=error, update=None))
+
+            await app.updater.start_polling(error_callback=error_callback)
+            await app.start()
+            log.info("Bot @%s démarré (persona %s)", app.bot.username, app.bot_data["bot"].persona.slug)
+
+        log.info("%d bot(s) en attente de messages (Ctrl+C pour arrêter)", len(launched))
+        await stop.wait()
+        log.info("Arrêt demandé")
+    finally:
+        if own_signals:
+            # Le signal a fait son travail : on rend leur effet normal aux suivants. Si l'arrêt
+            # se bloque, un second Ctrl+C interrompt alors vraiment le programme.
+            for sig in STOP_SIGNALS:
+                loop.remove_signal_handler(sig)
+        # Même si le démarrage d'un bot a échoué, ceux déjà lancés sont arrêtés proprement :
+        # les derniers messages sont marqués comme lus et ne seront pas traités deux fois.
+        for app in reversed(launched):
+            if app.updater.running:
+                await app.updater.stop()
+            if app.running:
+                await app.stop()
+            await app.shutdown()

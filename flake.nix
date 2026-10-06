@@ -13,7 +13,7 @@
 # par uv dans .venv, à partir de pyproject.toml et uv.lock : c'est uv qui fait foi, et le
 # projet s'installe de la même façon avec ou sans Nix.
 {
-  description = "JeanClaude : environnement de développement (Python + uv)";
+  description = "persona-bot : environnement de développement (Python + uv)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";

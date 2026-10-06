@@ -1,6 +1,7 @@
-# Module home-manager qui fait tourner le bot Telegram comme service systemd "utilisateur".
+# Module home-manager qui fait tourner les bots Telegram (un par persona) comme service
+# systemd "utilisateur".
 #
-# C'est la variante Nix de deploy/jcvd-bot.service : le même service, mais déclaré dans la
+# C'est la variante Nix de deploy/persona-bot.service : le même service, mais déclaré dans la
 # configuration home-manager de la machine au lieu d'être activé à la main avec
 # `systemctl --user enable`. Mode d'emploi : docs/DEPLOIEMENT_PI.md, section 12.
 #
@@ -9,7 +10,7 @@
 # options (ce qu'on peut régler) et la configuration qui en découle. Une fois ce fichier
 # importé dans sa configuration, il suffit d'écrire :
 #
-#   services.jcvd-bot.enable = true;
+#   services.persona-bot.enable = true;
 #
 # Ce que le module ne fait PAS : installer le projet. Le bot tourne toujours depuis le dépôt
 # cloné, avec l'environnement Python créé par uv (.venv) et les secrets de .env (étapes 6 et 7
@@ -24,16 +25,16 @@
 }:
 
 let
-  cfg = config.services.jcvd-bot;
+  cfg = config.services.persona-bot;
 in
 {
-  options.services.jcvd-bot = {
-    enable = lib.mkEnableOption "le bot Telegram JCVD";
+  options.services.persona-bot = {
+    enable = lib.mkEnableOption "les bots Telegram persona-bot";
 
     directory = lib.mkOption {
       type = lib.types.str;
       # %h est remplacé par systemd par le dossier personnel (/home/<utilisateur>).
-      default = "%h/projects/JeanClaude";
+      default = "%h/projects/persona-bot";
       description = "Dossier du dépôt cloné, qui contient .env et .venv.";
     };
 
@@ -44,12 +45,12 @@ in
 
   # lib.mkIf : cette configuration n'existe que si `enable = true`.
   config = lib.mkIf cfg.enable {
-    # home-manager écrit ce service dans ~/.config/systemd/user/jcvd-bot.service, l'active au
+    # home-manager écrit ce service dans ~/.config/systemd/user/persona-bot.service, l'active au
     # démarrage et le relance quand sa définition change. Les réglages sont les mêmes que dans
-    # deploy/jcvd-bot.service : garde les deux fichiers synchronisés.
-    systemd.user.services.jcvd-bot = {
+    # deploy/persona-bot.service : garde les deux fichiers synchronisés.
+    systemd.user.services.persona-bot = {
       Unit = {
-        Description = "Bot Telegram JCVD (RAG)";
+        Description = "Bots Telegram persona-bot (une persona par bot)";
         # Avec Ollama sur le Pi (services.ollama de home-manager, voir docs/DEPLOIEMENT_PI.md) :
         # démarre le bot après lui. Ce n'est qu'un ordre de démarrage, pas une dépendance : sans
         # Ollama (LLM_BACKEND=claude, ou Ollama sur une autre machine), la ligne n'a aucun effet.
@@ -62,7 +63,7 @@ in
         # --env-file : la clé d'API et le token Telegram sont lus dans .env, exactement comme en
         # lançant le bot à la main. --frozen : utilise les versions de uv.lock telles quelles,
         # sans jamais les modifier.
-        ExecStart = "${lib.getExe cfg.package} run --frozen --env-file .env jcvd telegram";
+        ExecStart = "${lib.getExe cfg.package} run --frozen --env-file .env persona telegram";
         # Relance le bot 10 s après un plantage. Au démarrage du Pi, si le réseau n'est pas
         # encore prêt, le bot échoue à joindre Telegram, s'arrête, et cette relance fait la
         # suite.

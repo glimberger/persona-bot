@@ -6,10 +6,10 @@ Deux niveaux :
 - debug  : en plus, chaque appel de fonction décorée par @traced (arguments,
   résultat, durée) et le détail des actions internes (log.debug dans le code).
 
-On active le mode debug avec `jcvd --debug <commande>` ou la variable
-d'environnement JCVD_DEBUG=1.
+On active le mode debug avec `persona --debug <commande>` ou la variable
+d'environnement PERSONA_DEBUG=1.
 
-Seuls les loggers du projet ("jcvd_bot.*") passent en DEBUG. Les librairies
+Seuls les loggers du projet ("persona_bot.*") passent en DEBUG. Les librairies
 tierces restent en WARNING : leurs logs détaillés noieraient les nôtres, et
 certaines écrivent des secrets (la librairie réseau httpx journalise les URL
 de Telegram, qui contiennent le token du bot).
@@ -79,15 +79,15 @@ def setup_logging(debug=False):
         format="%(asctime)s %(levelname)-7s %(name)s: %(message)s",
         level=logging.WARNING,  # niveau des librairies tierces
     )
-    logging.getLogger("jcvd_bot").setLevel(logging.DEBUG if debug else logging.INFO)
+    logging.getLogger("persona_bot").setLevel(logging.DEBUG if debug else logging.INFO)
 
 
 def traced(func):
     """
     Décorateur : en mode debug, journalise chaque appel de `func`.
 
-        → JCVDBot.respond(user_message='Salut', conversation_id=42)
-        ← JCVDBot.respond = ('Ah tu vois...', [...]) (2315 ms)
+        → PersonaBot.respond(user_message='Salut', conversation_id=42)
+        ← PersonaBot.respond = ('Ah tu vois...', [...]) (2315 ms)
 
     En mode normal, il appelle simplement la fonction : le test
     `isEnabledFor(DEBUG)` ne coûte presque rien.
