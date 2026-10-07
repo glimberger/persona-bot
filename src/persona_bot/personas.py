@@ -39,7 +39,7 @@ SLUG_PATTERN = re.compile(r"[a-z0-9_]+")
 
 
 class PersonaError(Exception):
-    """Persona introuvable ou mal décrite : le message dit quoi corriger."""
+    """Persona introuvable, mal décrite ou pas indexée : le message dit quoi corriger."""
 
 
 @dataclass(frozen=True)

@@ -10,9 +10,10 @@ citations n'a pas de Retriever du tout (voir bot.py).
 
 import logging
 
-from persona_bot.config import RETRIEVE_K, SIMILARITY_THRESHOLD
+from persona_bot.config import CHROMA_DB_PATH, RETRIEVE_K, SIMILARITY_THRESHOLD
 from persona_bot.index import embedding_function, get_client
 from persona_bot.logs import short_repr, traced
+from persona_bot.personas import PersonaError
 
 log = logging.getLogger(__name__)
 
@@ -21,7 +22,18 @@ class Retriever:
     @traced
     def __init__(self, persona):
         name = persona.collection_name
-        self.collection = get_client().get_collection(name=name, embedding_function=embedding_function())
+        client = get_client()
+        # L'index (data/chroma/) n'est pas dans git : chaque machine le construit avec
+        # `persona index`. Après un `git pull` qui apporte une nouvelle persona, sa collection
+        # n'existe donc pas encore. Sans ce test, Chroma lèverait un NotFoundError peu parlant,
+        # et seulement après le chargement du modèle d'embeddings (10 à 16 s sur un Pi).
+        if name not in [c.name for c in client.list_collections()]:
+            raise PersonaError(
+                f"La persona {persona.slug!r} a des citations, mais pas d'index : la collection "
+                f"{name} n'existe pas dans {CHROMA_DB_PATH}. Construis-la avec : "
+                f"uv run persona index {persona.slug}"
+            )
+        self.collection = client.get_collection(name=name, embedding_function=embedding_function())
         log.debug("Collection %r ouverte : %d citations", name, self.collection.count())
 
     @traced

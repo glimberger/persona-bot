@@ -308,16 +308,32 @@ README, [Mode debug](../README.md#mode-debug)).
 ssh agent-pi
 cd ~/projects/persona-bot
 git pull
-uv run persona ingest && uv run persona index   # seulement si des citations ont changé
+uv run persona ingest && uv run persona index   # si des citations ont changé ou une persona est arrivée
 systemctl --user restart persona-bot
 ```
 
 `uv run` remet l'environnement à jour tout seul si `uv.lock` a changé.
 
-**Ajouter une persona sur le Pi** : après le `git pull` qui l'apporte, ajoute son
-`TELEGRAM_TOKEN_<SLUG>` dans le `.env` du Pi (`nano ~/projects/persona-bot/.env`), puis
-redémarre le service. Au démarrage, le journal affiche une ligne `Bot @…_bot démarré` par
-persona.
+**Ajouter une persona sur le Pi** : après le `git pull` qui l'apporte :
+
+1. si elle a des citations, construis son index : `uv run persona index <slug>`. Le
+   `git pull` apporte son `citations.json`, mais pas l'index (`data/chroma/` n'est pas dans
+   git, voir le [guide, section 8](GUIDE_RAG.md#8-limites-et-pièges)) ;
+2. ajoute son `TELEGRAM_TOKEN_<SLUG>` dans le `.env` du Pi
+   (`nano ~/projects/persona-bot/.env`) ;
+3. redémarre le service. Le journal affiche une ligne `Bot @…_bot démarré` par persona.
+
+Si tu oublies l'étape 1, le service ne démarre **aucun** bot et le journal donne la commande
+à lancer (le message tient sur une ligne) :
+
+```
+La persona 'jacquouille' a des citations, mais pas d'index : la collection citations_jacquouille
+n'existe pas dans /home/…/persona-bot/data/chroma. Construis-la avec : uv run persona index jacquouille
+```
+
+Après plusieurs échecs rapprochés, systemd cesse de relancer le service (`inactive (dead)`
+dans `systemctl --user status persona-bot`). Une fois l'index construit, un
+`systemctl --user restart persona-bot` suffit.
 
 ---
 
