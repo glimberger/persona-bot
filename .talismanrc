@@ -27,4 +27,6 @@ allowed_patterns:
   # Names of the secret variables (their values live only in .env).
   - "ANTHROPIC_API_KEY"
   - "TELEGRAM_TOKEN_"
+  # pytest's monkeypatch fixture: "monkeypatch" contains "key".
+  - "monkeypatch"
 version: "1.0"

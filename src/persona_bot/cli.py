@@ -291,4 +291,9 @@ def main():
     debug = args.debug or os.environ.get("PERSONA_DEBUG", "").lower() in {"1", "true", "yes"}
     setup_logging(debug)
     log.debug("Mode debug activé, commande : %s", args.func.__name__)
-    args.func(args)
+    try:
+        args.func(args)
+    except PersonaError as error:
+        # Erreur de configuration (persona mal décrite, index manquant…) : son message dit
+        # quoi corriger. SystemExit l'affiche et quitte avec le code 1, sans trace Python.
+        raise SystemExit(str(error)) from error

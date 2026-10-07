@@ -434,6 +434,20 @@ normalisés (sans accents ni ponctuation) et en fusionnant les versions similair
 sont calculés à l'aide de règles simples. Ils ne servent pas à la recherche, mais
 pourraient servir au filtrage (voir l'exercice 4).
 
+**L'index ne voyage pas avec le code.** `data/<slug>/citations.json` est dans git, mais pas
+`data/chroma/` : l'index se déduit entièrement du JSON (même modèle, mêmes citations, mêmes
+vecteurs), il est binaire, et une seule commande le reconstruit. Chaque machine le construit
+donc elle-même avec `persona index`. Le revers : un `git pull` qui apporte une
+nouvelle persona avec citations ne lui apporte pas d'index. C'est arrivé sur le Pi à l'ajout
+de Jacquouille : le service a planté en boucle sur `Collection [citations_jacquouille] does
+not exist`. Et comme toutes les personas tournent dans le même programme, JCVD et Godefroy
+se sont arrêtés avec lui. Le `Retriever` vérifie maintenant que la collection existe avant de
+charger le modèle d'embeddings, et sinon s'arrête avec un message qui donne la commande à
+lancer (`uv run persona index <slug>`).
+
+On aurait pu démarrer quand même les bots des autres personas. On ne l'a pas fait : une
+persona en panne passerait inaperçue, alors qu'un service arrêté se remarque tout de suite.
+
 ---
 
 ## 9. Mesurer avant d'améliorer

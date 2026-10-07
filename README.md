@@ -132,6 +132,12 @@ dans Chroma, dans `data/chroma/`, avec la distance cosinus. Chaque persona a sa 
 **collection** (l'équivalent d'une table) : `citations_jcvd` pour JCVD. La recherche d'une
 persona ne peut donc jamais renvoyer les citations d'une autre.
 
+`data/chroma/` n'est pas versionné : sur chaque machine, après un `git pull` qui apporte une
+persona avec citations ou qui modifie des citations, relance `uv run persona index <slug>`.
+Sinon, `search`, `eval`, `chat`, `ask` et `telegram` s'arrêtent avec un message qui donne
+cette commande. Pourquoi l'index n'est pas dans git :
+[guide, section 8](docs/GUIDE_RAG.md#8-limites-et-pièges).
+
 Ce qu'est un embedding, pourquoi ce modèle et pourquoi le cosinus plutôt que la distance
 euclidienne : [guide, section 4](docs/GUIDE_RAG.md#4-les-embeddings--transformer-du-sens-en-nombres) et
 [section 5](docs/GUIDE_RAG.md#5-la-base-vectorielle--retrouver-les-voisins-rapidement).
