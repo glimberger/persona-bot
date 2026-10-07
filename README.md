@@ -1,9 +1,9 @@
 # persona-bot — des personas sur Telegram, un RAG pédagogique
 
 Des bots conversationnels qui incarnent chacun un personnage, une **persona**, et qu'on
-retrouve sur Telegram : Jean-Claude Van Damme et Godefroy de Montmirail, le chevalier des
-*Visiteurs*. Tous deux s'appuient sur de vraies répliques, mais une persona peut aussi n'avoir
-qu'une description. Le projet sert à comprendre, pas à pas, le
+retrouve sur Telegram : Jean-Claude Van Damme, Godefroy de Montmirail et Jacquouille la
+Fripouille, les deux derniers venant des *Visiteurs*. Toutes trois s'appuient sur de vraies
+répliques, mais une persona peut aussi n'avoir qu'une description. Le projet sert à comprendre, pas à pas, le
 pattern **RAG** (*Retrieval-Augmented Generation*) : chercher des passages pertinents dans une
 base de textes, puis les donner à un LLM pour qu'il s'en inspire. Et à voir ce qui change
 quand on s'en passe.
@@ -261,7 +261,8 @@ terminal avant de lui créer un bot.
    donne un **token** : c'est le mot de passe de ce bot, ne le partage pas. Recommence pour
    chaque persona (`/setuserpic` dans @BotFather pour lui donner une photo).
 2. Copie le fichier d'exemple et remplis `ANTHROPIC_API_KEY` et un `TELEGRAM_TOKEN_<SLUG>`
-   par persona (`TELEGRAM_TOKEN_JCVD` pour JCVD, `TELEGRAM_TOKEN_GODEFROY` pour Godefroy) :
+   par persona (`TELEGRAM_TOKEN_JCVD` pour JCVD, `TELEGRAM_TOKEN_GODEFROY` pour Godefroy,
+   `TELEGRAM_TOKEN_JACQUOUILLE` pour Jacquouille) :
    ```bash
    cp .env.example .env
    chmod 600 .env        # lisible par toi seul
@@ -467,8 +468,9 @@ la gestion des historiques, le cas sans citations, et le démarrage et l'arrêt 
 
 Le code est sous licence [MIT](LICENSE) : tu peux le réutiliser, le modifier et le
 redistribuer librement, en conservant la mention de copyright. Les citations de
-`personas/jcvd/citations.md` appartiennent à Jean-Claude Van Damme et ne sont pas couvertes par
-cette licence.
+`personas/jcvd/citations.md`, `personas/godefroy/citations.md` et
+`personas/jacquouille/citations.md` appartiennent à leurs auteurs ou ayants droit respectifs et
+ne sont pas couvertes par cette licence.
 
 ## Pour aller plus loin
 
