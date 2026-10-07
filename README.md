@@ -1,9 +1,9 @@
 # persona-bot — des personas sur Telegram, un RAG pédagogique
 
 Des bots conversationnels qui incarnent chacun un personnage, une **persona**, et qu'on
-retrouve sur Telegram : Jean-Claude Van Damme et Godefroy de Montmirail, le chevalier des
-*Visiteurs*. Tous deux s'appuient sur de vraies répliques, mais une persona peut aussi n'avoir
-qu'une description. Le projet sert à comprendre, pas à pas, le
+retrouve sur Telegram : Jean-Claude Van Damme, Godefroy de Montmirail et Jacquouille la
+Fripouille, les deux derniers venant des *Visiteurs*. Toutes trois s'appuient sur de vraies
+répliques, mais une persona peut aussi n'avoir qu'une description. Le projet sert à comprendre, pas à pas, le
 pattern **RAG** (*Retrieval-Augmented Generation*) : chercher des passages pertinents dans une
 base de textes, puis les donner à un LLM pour qu'il s'en inspire. Et à voir ce qui change
 quand on s'en passe.
@@ -151,10 +151,13 @@ Comment lire ces scores, et le rôle du seuil `SIMILARITY_THRESHOLD` (0,2 dans `
 [guide, section 4](docs/GUIDE_RAG.md#comparer-deux-vecteurs--la-similarité-cosinus) et
 [section 8](docs/GUIDE_RAG.md#8-limites-et-pièges).
 
-`persona eval jcvd` rejoue les 30 questions de `personas/jcvd/eval_search.json` et affiche, pour chacune, le
-rang de la bonne citation, puis les scores hit@3 et MRR. Lance-le avant et après toute
+`persona eval jcvd` rejoue les 30 questions de `personas/jcvd/eval_search.json` (21 pour
+`persona eval godefroy`) et affiche, pour chacune, le rang de la bonne citation, puis les
+scores hit@3 et MRR. Sans slug, `persona eval` évalue toutes les personas qui ont un jeu
+d'évaluation. Lance-le avant et après toute
 modification de la recherche. Ce que mesurent ces indicateurs, les scores actuels et
-l'expérience qu'ils ont permis d'écarter : [guide, section 9](docs/GUIDE_RAG.md#9-mesurer-avant-daméliorer).
+l'expérience qu'ils ont permis d'écarter, et pourquoi Godefroy obtient un score plus bas que
+JCVD : [guide, section 9](docs/GUIDE_RAG.md#9-mesurer-avant-daméliorer).
 
 ### Étape 3b — Générer la réponse (`persona chat`, `persona ask`, `bot.py`, `llm.py`)
 
@@ -261,7 +264,8 @@ terminal avant de lui créer un bot.
    donne un **token** : c'est le mot de passe de ce bot, ne le partage pas. Recommence pour
    chaque persona (`/setuserpic` dans @BotFather pour lui donner une photo).
 2. Copie le fichier d'exemple et remplis `ANTHROPIC_API_KEY` et un `TELEGRAM_TOKEN_<SLUG>`
-   par persona (`TELEGRAM_TOKEN_JCVD` pour JCVD, `TELEGRAM_TOKEN_GODEFROY` pour Godefroy) :
+   par persona (`TELEGRAM_TOKEN_JCVD` pour JCVD, `TELEGRAM_TOKEN_GODEFROY` pour Godefroy,
+   `TELEGRAM_TOKEN_JACQUOUILLE` pour Jacquouille) :
    ```bash
    cp .env.example .env
    chmod 600 .env        # lisible par toi seul
@@ -419,7 +423,8 @@ persona-bot/
 │   │   ├── persona.toml         nom, prompt système, messages, mots-clés des thèmes
 │   │   ├── citations.md         ses citations, source brute (à éditer)
 │   │   └── eval_search.json     jeu d'évaluation de sa recherche (`persona eval`)
-│   └── godefroy/                persona.toml et citations.md (pas encore de jeu d'évaluation)
+│   ├── godefroy/                mêmes fichiers que jcvd/
+│   └── jacquouille/             persona médiévale, avec sept citations source
 ├── data/                        fichiers générés
 │   ├── <slug>/citations.json    généré par `persona ingest`, un dossier par persona
 │   └── chroma/                  index vectoriel, généré par `persona index` (non versionné)
@@ -467,8 +472,9 @@ la gestion des historiques, le cas sans citations, et le démarrage et l'arrêt 
 
 Le code est sous licence [MIT](LICENSE) : tu peux le réutiliser, le modifier et le
 redistribuer librement, en conservant la mention de copyright. Les citations de
-`personas/jcvd/citations.md` appartiennent à Jean-Claude Van Damme et ne sont pas couvertes par
-cette licence.
+`personas/jcvd/citations.md`, `personas/godefroy/citations.md` et
+`personas/jacquouille/citations.md` appartiennent à leurs auteurs ou ayants droit respectifs et
+ne sont pas couvertes par cette licence.
 
 ## Pour aller plus loin
 

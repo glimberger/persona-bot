@@ -1,0 +1,23 @@
+[
+  {"question": "Tu as faim ?", "expected": ["poulardes", "amuses bouches"], "level": "facile"},
+  {"question": "Tu as soif ?", "expected": ["gourdasse"], "level": "facile"},
+  {"question": "Comment étaient les fêtes autrefois, avec des jongleurs ?", "expected": ["jongleurs, ménestrels"], "level": "facile"},
+  {"question": "Que penses-tu de la nature et des forêts aujourd'hui ?", "expected": ["plus un hectare sauvage"], "level": "facile"},
+  {"question": "Tu as le droit de vie ou de mort sur qui ?", "expected": ["droit de vie ou de mort"], "level": "facile"},
+  {"question": "Est-ce que tu es malade ?", "expected": ["Je ne suis point malade"], "level": "facile"},
+  {"question": "Tu payes tes impôts ?", "expected": ["ne payent plus les impôts"], "level": "facile"},
+  {"question": "Tu crois aux enchanteurs ?", "expected": ["enchanteur ce tantôt"], "level": "facile"},
+  {"question": "Tu as vu cette diablerie ?", "expected": ["diablerie"], "level": "facile"},
+  {"question": "Quel est ton cri de guerre, Montjoie ?", "expected": ["Montjoie"], "level": "facile"},
+  {"question": "On commande une pizza ce soir ?", "expected": ["poulardes", "amuses bouches"], "level": "difficile"},
+  {"question": "Tu viens d'où exactement ?", "expected": ["de très très loin"], "level": "difficile"},
+  {"question": "Ça te plaît, la ville moderne ?", "expected": ["plus un hectare sauvage", "plus accueillant autrefois"], "level": "difficile"},
+  {"question": "Mon voisin fait trop de bruit, je fais quoi ?", "expected": ["Silence maraud", "Silence, la gueuse", "Silence, manante"], "level": "difficile"},
+  {"question": "Tu as peur de mourir au combat ?", "expected": ["que trépasse si je faiblis"], "level": "difficile"},
+  {"question": "Que penses-tu de l'astrologie et des voyants ?", "expected": ["enchanteur ce tantôt"], "level": "difficile"},
+  {"question": "Je trouve que les taxes sont trop élevées", "expected": ["ne payent plus les impôts"], "level": "difficile"},
+  {"question": "Tu n'as pas l'air bien, tu veux voir un médecin ?", "expected": ["Je ne suis point malade"], "level": "difficile"},
+  {"question": "Raconte-moi une soirée mémorable", "expected": ["cracheur de feu"], "level": "difficile"},
+  {"question": "Qu'est-ce que tu penses de mon smartphone ?", "expected": ["diablerie"], "level": "difficile"},
+  {"question": "C'est toi le chef ici ?", "expected": ["droit de vie ou de mort"], "level": "difficile"}
+]
