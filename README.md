@@ -151,10 +151,13 @@ Comment lire ces scores, et le rôle du seuil `SIMILARITY_THRESHOLD` (0,2 dans `
 [guide, section 4](docs/GUIDE_RAG.md#comparer-deux-vecteurs--la-similarité-cosinus) et
 [section 8](docs/GUIDE_RAG.md#8-limites-et-pièges).
 
-`persona eval jcvd` rejoue les 30 questions de `personas/jcvd/eval_search.json` et affiche, pour chacune, le
-rang de la bonne citation, puis les scores hit@3 et MRR. Lance-le avant et après toute
+`persona eval jcvd` rejoue les 30 questions de `personas/jcvd/eval_search.json` (21 pour
+`persona eval godefroy`) et affiche, pour chacune, le rang de la bonne citation, puis les
+scores hit@3 et MRR. Sans slug, `persona eval` évalue toutes les personas qui ont un jeu
+d'évaluation. Lance-le avant et après toute
 modification de la recherche. Ce que mesurent ces indicateurs, les scores actuels et
-l'expérience qu'ils ont permis d'écarter : [guide, section 9](docs/GUIDE_RAG.md#9-mesurer-avant-daméliorer).
+l'expérience qu'ils ont permis d'écarter, et pourquoi Godefroy obtient un score plus bas que
+JCVD : [guide, section 9](docs/GUIDE_RAG.md#9-mesurer-avant-daméliorer).
 
 ### Étape 3b — Générer la réponse (`persona chat`, `persona ask`, `bot.py`, `llm.py`)
 
@@ -420,7 +423,8 @@ persona-bot/
 │   │   ├── persona.toml         nom, prompt système, messages, mots-clés des thèmes
 │   │   ├── citations.md         ses citations, source brute (à éditer)
 │   │   └── eval_search.json     jeu d'évaluation de sa recherche (`persona eval`)
-│   └── godefroy/                persona.toml et citations.md (pas encore de jeu d'évaluation)
+│   ├── godefroy/                mêmes fichiers que jcvd/
+│   └── jacquouille/             persona médiévale, avec sept citations source
 ├── data/                        fichiers générés
 │   ├── <slug>/citations.json    généré par `persona ingest`, un dossier par persona
 │   └── chroma/                  index vectoriel, généré par `persona index` (non versionné)

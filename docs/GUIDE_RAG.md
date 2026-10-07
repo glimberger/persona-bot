@@ -502,6 +502,45 @@ Enseignements à retenir :
 - **Un petit LLM respecte mal les consignes de format** : ici, il numérotait ses questions
   et les mettait en italique malgré la consigne, ce qui a imposé un découpage tolérant.
 
+### Une deuxième persona : Godefroy et ses « hubs »
+
+Godefroy de Montmirail a son propre jeu d'évaluation, `personas/godefroy/eval_search.json` :
+21 questions (10 faciles, 11 difficiles), écrites avant toute recherche pour ne pas les
+adapter aux résultats. Scores obtenus avec le même modèle et les mêmes réglages que pour JCVD :
+
+| Persona | Citations | facile hit@3 (MRR) | difficile hit@3 (MRR) |
+|---|---|---|---|
+| JCVD | 72 | 16/16 (1,00) | 11/14 (0,64) |
+| Godefroy | 21 | 8/10 (0,61) | 5/11 (0,39) |
+
+Le score est nettement plus bas, alors que Godefroy n'a que 21 citations : il est plus facile
+de trouver la bonne parmi 21 que parmi 72. Même des questions faciles échouent :
+« Est-ce que tu es malade ? » ne trouve « Je ne suis point malade ni foldinguo ! » qu'au
+rang 6.
+
+En regardant ce qui passe devant, on voit toujours les mêmes répliques. Mesure : sur les 21
+questions, « Silence, manante, ou tu vas prendre une claquade ! » figure dans les 3 premiers
+résultats **12 fois**, « Hola l'aubergiste ! Que d'espanouilles ! Tu frappes une femelle ? »
+7 fois, quel que soit le sujet. Une telle citation, proche de presque tout, s'appelle un
+**hub** : elle occupe une des 3 places de chaque requête et pousse les bonnes réponses hors
+du top 3.
+
+Hypothèse (non vérifiée) : ces répliques sont courtes et faites de mots que le modèle
+d'embeddings ne connaît pas (« claquade », « manante », « espanouilles », « biaiseux »).
+Ce qui reste reconnaissable, c'est l'interpellation (« tu », « Silence ! »), qui ressemble à
+n'importe quelle question adressée au personnage. Le vocabulaire de JCVD, lui, est du français
+courant mêlé d'anglais, que le modèle connaît bien.
+
+Enseignements :
+
+- **Un jeu d'évaluation par corpus.** Les réglages qui marchent pour JCVD (modèle, seuil)
+  ne garantissent rien pour une autre persona : il faut mesurer chacune.
+- **Regarde les résultats, pas seulement le score.** Le score dit que la recherche est
+  moins bonne ; seul l'examen des classements a montré pourquoi (les hubs).
+- Pistes, à mesurer avant de les adopter : un modèle d'embeddings plus grand, une recherche
+  hybride (mots-clés + sens, voir la section 8), ou enrichir chaque réplique d'une phrase en
+  français courant qui dit de quoi elle parle.
+
 ## 10. Une persona sans citations : quand le RAG n'est pas là
 
 Toutes les personas n'ont pas de citations. Pour un personnage inventé, ou pour quelqu'un
