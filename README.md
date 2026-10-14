@@ -421,7 +421,6 @@ persona-bot/
 ├── pyproject.toml / uv.lock     dépendances et commande `persona` (gérées par uv)
 ├── flake.nix / flake.lock       environnement de développement Nix (optionnel : Python + uv)
 ├── .envrc                       active cet environnement avec direnv
-├── .talismanrc                  exceptions du hook Talisman (faux positifs connus)
 ├── .env.example                 modèle du fichier de secrets (.env, non versionné)
 ├── LICENSE                      licence MIT
 ├── personas/                    une persona par dossier (voir « Les personas »)
